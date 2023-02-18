@@ -1,0 +1,4 @@
+# Ignore all htmlFiles in this directory
+*.html
+# Except this file
+!.gitignore
