@@ -32,7 +32,6 @@ if __name__ == "__main__":
     mydb = mysql.connector.connect(
         host=os.getenv('HOST'),
         user=os.getenv('USER'),
-        password=os.getenv('PASSWORD'),
         database=os.getenv('DATABASE')
     )
     mycursor = mydb.cursor(buffered=True)
@@ -53,31 +52,31 @@ if __name__ == "__main__":
             }
             openChrome()
             htmlCollectionT1 = Thread(target=firstWebsiteHTMLCollector,args=(ast.literal_eval(os.getenv('BETTING_SITE_LINK_DICTIONARY'))["firstWebsite"][index],))
-            #htmlCollectionT1.start()
-            #htmlCollectionT1.join()
+            htmlCollectionT1.start()
+            htmlCollectionT1.join()
 
-            parsingT1 = Thread(target=firstWebsiteParser, args =(ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['Sport'],ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['League'],ast.literal_eval(os.getenv('BETTING_SITE_LINK_DICTIONARY'))["firstWebsite"][index],driver,mycursor,allMatchups))
+            parsingT1 = Thread(target=firstWebsiteParser, args =(ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['Sport'],ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['League'],ast.literal_eval(os.getenv('BETTING_SITE_LINK_DICTIONARY'))["firstWebsite"][index],ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['Table Name'],driver,mycursor,allMatchups))
             parsingT1.start()
             htmlCollectionT2 = Thread(target=secondWebsiteHTMLCollector,args=(ast.literal_eval(os.getenv('BETTING_SITE_LINK_DICTIONARY'))["secondWebsite"][index],))
-            #htmlCollectionT2.start()
+            htmlCollectionT2.start()
             parsingT1.join()
-            #htmlCollectionT2.join()
+            htmlCollectionT2.join()
 
-            parsingT2 = Thread(target=secondWebsiteParser, args =(ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['Sport'],ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['League'],ast.literal_eval(os.getenv('BETTING_SITE_LINK_DICTIONARY'))["secondWebsite"][index],driver,mycursor,allMatchups))
+            parsingT2 = Thread(target=secondWebsiteParser, args =(ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['Sport'],ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['League'],ast.literal_eval(os.getenv('BETTING_SITE_LINK_DICTIONARY'))["secondWebsite"][index],ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['Table Name'],driver,mycursor,allMatchups))
             parsingT2.start()
             htmlCollectionT3 = Thread(target=thirdWebsiteHTMLCollector,args=(ast.literal_eval(os.getenv('BETTING_SITE_LINK_DICTIONARY'))["thirdWebsite"][index],))
-            #htmlCollectionT3.start()
+            htmlCollectionT3.start()
             parsingT2.join()
-            #htmlCollectionT3.join()
+            htmlCollectionT3.join()
 
-            parsingT3 = Thread(target=thirdWebsiteParser, args =(ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['Sport'],ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['League'],ast.literal_eval(os.getenv('BETTING_SITE_LINK_DICTIONARY'))["thirdWebsite"][index],driver,mycursor,allMatchups))
+            parsingT3 = Thread(target=thirdWebsiteParser, args =(ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['Sport'],ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['League'],ast.literal_eval(os.getenv('BETTING_SITE_LINK_DICTIONARY'))["thirdWebsite"][index],ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['Table Name'],driver,mycursor,allMatchups))
             parsingT3.start()
             htmlCollectionT4 = Thread(target=fourthWebsiteHTMLCollector,args=(ast.literal_eval(os.getenv('BETTING_SITE_LINK_DICTIONARY'))["fourthWebsite"][index],))
-            #htmlCollectionT4.start()
+            htmlCollectionT4.start()
             parsingT3.join()
-            #htmlCollectionT4.join()
+            htmlCollectionT4.join()
 
-            parsingT4 = Thread(target=fourthWebsiteParser,args =(ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['Sport'],ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['League'],ast.literal_eval(os.getenv('BETTING_SITE_LINK_DICTIONARY'))["fourthWebsite"][index],driver,mycursor,allMatchups))
+            parsingT4 = Thread(target=fourthWebsiteParser,args =(ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['Sport'],ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['League'],ast.literal_eval(os.getenv('BETTING_SITE_LINK_DICTIONARY'))["fourthWebsite"][index],ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['Table Name'],driver,mycursor,allMatchups))
             parsingT4.start()
             parsingT4.join()
 

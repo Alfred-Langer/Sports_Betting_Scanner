@@ -6,10 +6,13 @@ import os
 from discord import SyncWebhook
 from bs4 import BeautifulSoup
 import traceback
+import subprocess
+import multiprocessing
 
+def openFirefox(link):
+    subprocess.call([os.getcwd() + "/bashScript/openUpBrowser.sh", link])
 
-
-def findImageOnScreen(image:str, timeoutDuration:int, scrollFlag:bool = False, confidenceValue:float = 0.9, grayscaleFlag:bool = False, regionBox:tuple = (0,0,1920,1080)):
+def findImageOnScreen(image:str, timeoutDuration:int, scrollFlag:bool = False, confidenceValue:float = 0.9, grayscaleFlag:bool = False, regionBox:tuple = (0,0,1920,1080),returnNothing = False):
     timeout = time.time() + timeoutDuration 
     pictureLocation = None
 
@@ -25,10 +28,13 @@ def findImageOnScreen(image:str, timeoutDuration:int, scrollFlag:bool = False, c
         elif scrollFlag:
             #Scroll Flag is specifically for locating the HTML Tags. Somtimes when you Inspect Element, the display shows the middle of the HTML content.
             #This block of code just clicks on the up arrow key of the Inspect Element scroll bar, in order to scroll up.
-            pyautogui.click(1911,145,button='left',clicks=10)
-        time.sleep(1) #Adding a sleep for 1 second here, apparently helps to reduce CPU Usage for this process.
+            pyautogui.click(1911,202,button='left',clicks=10)
+        #time.sleep(1) #Adding a sleep for 1 second here, apparently helps to reduce CPU Usage for this process.
 
-    raise ImageNotFoundOnScreenError("ImageNotPresentError: Could not find " + image + " on the screen")
+    if returnNothing:
+        return None
+    else:
+        raise ImageNotFoundOnScreenError("ImageNotPresentError: Could not find " + image + " on the screen")
 
 def findOneOfTheImagesOnScreen(images:tuple, timeoutDuration:int, scrollFlag:bool = False, confidenceValue:float = 0.9, grayscaleFlag:bool = False, regionBox:tuple = (0,0,1920,1080)):
     timeout = time.time() + timeoutDuration 
@@ -73,7 +79,7 @@ def inspectElement():
 
 def goToWebsite(url:str):
     #Click on the Address bar
-    x,y = findImageOnScreen("bookmarkIcons.png",timeoutDuration = 5, regionBox=(1801,52,119,50),grayscaleFlag=True)
+    x,y = findImageOnScreen("bookMarkIcons.png",timeoutDuration = 5, regionBox=(960,0,960,540),grayscaleFlag=True)
     pyautogui.click(x - 450,y)
 
     #Delete all the content currently in the Address bar
@@ -89,11 +95,30 @@ def copyHTML(htmlIcon:str,scrollFlagInput:bool = False):
     inspectElement()
     
     #Locate HTML tags in inspect Element and copy the HTML content to the clipboard
-    x,y = findImageOnScreen(htmlIcon,timeoutDuration = 20,scrollFlag = scrollFlagInput, regionBox=(1370,140,181,30), grayscaleFlag=True,confidenceValue=0.90)
+    x,y = findImageOnScreen(htmlIcon,timeoutDuration = 20,scrollFlag = scrollFlagInput, grayscaleFlag=True, regionBox=(1425,195,170,65), confidenceValue=0.90)
     pyautogui.rightClick(x,y)
-    x,y = findImageOnScreen("copyOption.png",timeoutDuration = 5,regionBox = (450,90,1350,410),grayscaleFlag=True)
+    x,y = findImageOnScreen("copyOption.png",timeoutDuration = 5, regionBox=(1475,330,1590,85), grayscaleFlag=True)
     pyautogui.moveTo(x,y)
-    x,y = findImageOnScreen("copyOuterHtmlOptionButton.png",timeoutDuration = 5,regionBox = (450,90,1450,410),grayscaleFlag=True)
+    x,y = findImageOnScreen("copyOuterHtmlOptionButton.png",timeoutDuration = 5, regionBox=(1710,360,165,90),grayscaleFlag=True)
+    pyautogui.moveTo(x,y)
+    time.sleep(0.25)
+    pyautogui.click(x,y)
+
+    #Close Inspect Element
+    inspectElement()
+
+def copyFireFoxHTML(htmlIcon:str,scrollFlagInput:bool = False):
+    #Open Inspect Element
+    inspectElement()
+    
+    #Locate HTML tags in inspect Element and copy the HTML content to the clipboard
+    x,y = findImageOnScreen(htmlIcon,timeoutDuration = 20,scrollFlag = scrollFlagInput, grayscaleFlag=True, regionBox=(70,880,65,40), confidenceValue=0.90)
+    pyautogui.rightClick(x,y)
+    x,y = findImageOnScreen("copyOptionFirefox.png",timeoutDuration = 5, regionBox=(95,790,130,40), grayscaleFlag=True)
+    pyautogui.moveTo(x,y)
+    x,y = findImageOnScreen("copyOuterHtmlOptionButtonFirefox.png",timeoutDuration = 5, regionBox=(350,815,160,40),grayscaleFlag=True)
+    pyautogui.moveTo(x,y)
+    time.sleep(0.25)
     pyautogui.click(x,y)
 
     #Close Inspect Element
@@ -119,15 +144,15 @@ def createLocalHTMLFile(htmlFileName:str,bodyFilter:bool = True):
     file.write(htmlCode)
     file.close()
 
-def getAllOddLinks(htmlFileName:str,aLinkClassName:str):
+def firstWebsiteGetAllOddLinks(htmlFileName:str,divContainerClassName:str,aLinkClassName:str,wrongDivContainerClassName:str = "INCORRECT",incorrectPageFlag:str = "NONE"):
     #This function is used when the odds for each matchup are displayed on their own individual HTML pages.
-    time.sleep(1)
+    time.sleep(2)
 
     #Here we paste the HTML content currently in the clipboard and make a file, similar to createLocalHTMLFile
     htmlCode = pyperclip.paste()
     if htmlCode == "undefined":
        return("undefined")
-
+    
     file = open(htmlFileName.encode('utf8'),"w",encoding="utf-8")
     file.write(htmlCode)
     file.close()
@@ -139,9 +164,64 @@ def getAllOddLinks(htmlFileName:str,aLinkClassName:str):
         raise LocalHTMLFileNotPresent(htmlFileName)
     
     soup = BeautifulSoup(page.read(),'html.parser',from_encoding='utf-8')
-    anchorTags = soup.find_all("a",class_=aLinkClassName)
+    divContainers = soup.select('div.'+divContainerClassName+':not(.'+ wrongDivContainerClassName +')')
+    anchorTags = []
+    for container in divContainers:
+        link = container.find("a",class_=aLinkClassName)
+        if link is not None:
+            anchorTags.append(link)
+
+    incorrectPageElements = soup.find_all("div",class_=incorrectPageFlag)
     if anchorTags == []:
         raise NoAnchorTagsPresentInLocalHTMLFileError(htmlFileName)
+    elif incorrectPageElements != []:
+        return []
+
+    #Lastly we iterate through all the anchor tags and extract the href attribute, AKA the URL to the HTML page that displays the odds for each individual matchup.
+    matchUrlList = []
+    for match in anchorTags:
+        matchUrlList.append(match['href'])
+
+    return matchUrlList
+
+def secondWebsiteGetAllOddLinks(htmlFileName:str,divContainerClassName:str,invalidInnerDivContainerClassName:str, aLinkClassName:str, retry=False):
+    #This function is used when the odds for each matchup are displayed on their own individual HTML pages.
+    time.sleep(1)
+
+    #Here we paste the HTML content currently in the clipboard and make a file, similar to createLocalHTMLFile
+    htmlCode = pyperclip.paste()
+    if htmlCode == "undefined":
+       return("undefined")
+    
+    file = open(htmlFileName.encode('utf8'),"w",encoding="utf-8")
+    file.write(htmlCode)
+    file.close()
+    
+    #Here we use Beautiful Soup, to parse through the HTML file, locate all the anchor tags, and store them in a list.
+    try:
+        page = open(htmlFileName,"rb")
+    except FileNotFoundError:
+        raise LocalHTMLFileNotPresent(htmlFileName)
+    
+    soup = BeautifulSoup(page.read(),'html.parser',from_encoding='utf-8')
+    div_containers = soup.find_all("div", class_=divContainerClassName, recursive=True)
+    div_containers_with_valid_odds = []
+    for event in div_containers:
+        if event.find("div", class_="odds"):
+            div_containers_with_valid_odds.append(event)
+
+    anchorTags = []
+    for container in div_containers_with_valid_odds:
+        link = container.find("a",class_=aLinkClassName)
+        if link is not None:
+            anchorTags.append(link)
+
+    if anchorTags == []:
+        if retry:
+            raise NoAnchorTagsPresentInLocalHTMLFileError(htmlFileName)
+        else:
+            return "Retry"
+
 
     #Lastly we iterate through all the anchor tags and extract the href attribute, AKA the URL to the HTML page that displays the odds for each individual matchup.
     matchUrlList = []
@@ -156,18 +236,26 @@ def firstWebsiteHTMLCollector(link:str):
         goToWebsite(link)
         matchUpLinks = "undefined"
         while matchUpLinks == "undefined":
-            findImageOnScreen("websiteImages/firstWebsiteLoadIcon.png",timeoutDuration = 20,grayscaleFlag=True,regionBox=(595,547,136,533)) #This website needs some extra time to load. This HTML icon indicates that all the HTML has been loaded and can be extracted.
+            findImageOnScreen("websiteImages/firstWebsiteLoadIcon.png",timeoutDuration = 20,grayscaleFlag=True,regionBox=(615,505,100,575)) #This website needs some extra time to load. This HTML icon indicates that all the HTML has been loaded and can be extracted.
             copyHTML("htmlIcon.png") 
-            matchUpLinks = getAllOddLinks(os.getcwd()  + "/localHTMLFiles/firstWebsiteOrigin.html",aLinkClassName=os.getenv('FIRST_WEBSITE_LINK_ELEMENT_CLASS'))
+            matchUpLinks = firstWebsiteGetAllOddLinks(os.getcwd()  + "/localHTMLFiles/firstWebsiteOrigin.html",aLinkClassName=os.getenv('FIRST_WEBSITE_LINK_ELEMENT_CLASS'),incorrectPageFlag='text-2x1',divContainerClassName=os.getenv('FIRST_WEBSITE_DIV_ELEMENT_CLASS'),wrongDivContainerClassName=os.getenv("FIRST_WEBSITE_WRONG_DIV_ELEMENT_CLASS"))
         
         for index in range(len(matchUpLinks)):
             link = matchUpLinks[index]
             goToWebsite(os.getenv('FIRST_WEBSITE_URL_PREFACE')+link)
             time.sleep(1)
-            allOddsOptionIconLocation=findImageOnScreen("websiteImages/allOddsOption.png",timeoutDuration=20,confidenceValue=0.90,regionBox=(600,811,1000,853))
-            pyautogui.leftClick(allOddsOptionIconLocation)
-            pyautogui.moveTo(200,200)
-            findOneOfTheImagesOnScreen(["websiteImages/firstWebsiteOddsLoadedIcon.png","websiteImages/firstWebsiteOddsLoadedIcon2.png"],timeoutDuration=20,grayscaleFlag=True, confidenceValue=0.90,regionBox=(600,811,1000,853))
+            counter = 0
+            noOddsLoadedFlag = None
+            while counter < 10 and noOddsLoadedFlag is None:
+                allOddsOptionIconLocation=findImageOnScreen("websiteImages/allOddsOption.png",timeoutDuration=1,grayscaleFlag=True, confidenceValue=0.90, returnNothing=True)
+                if allOddsOptionIconLocation is None:
+                    continue
+                pyautogui.leftClick(allOddsOptionIconLocation)
+                pyautogui.moveTo(allOddsOptionIconLocation.x + 70,allOddsOptionIconLocation.y)
+                noOddsLoadedFlag = findImageOnScreen("websiteImages/firstWebsiteOddsLoadedIcon.png",timeoutDuration=1,grayscaleFlag=True, confidenceValue=0.85, returnNothing=True)
+            
+            if counter >= 10:
+                raise FirstWebsiteNoOddsLoadedError()
             copyHTML("htmlIcon.png")
             createLocalHTMLFile(os.getcwd()  + "/localHTMLFiles/firstWebsiteHTMLFiles/page" + str(index + 1) + ".html")
     
@@ -180,20 +268,27 @@ def firstWebsiteHTMLCollector(link:str):
         htmlFetchingErrorWebhook.send(content=traceback.format_exc()) 
     except ImageNotFoundOnScreenError as inst:
         htmlFetchingErrorWebhook.send(content=traceback.format_exc())
+    except NoAnchorTagsPresentInLocalHTMLFileError as inst:
+        htmlFetchingErrorWebhook.send(content=traceback.format_exc())
+    except FirstWebsiteNoOddsLoadedError as inst:
+        htmlFetchingErrorWebhook.send(content=traceback.format_exc())
     
 
 def secondWebsiteHTMLCollector(link:str):
     try:
         htmlFetchingErrorWebhook = SyncWebhook.from_url(os.getenv('HTML_FETCHING_ERROR_NOTIF'))
         goToWebsite(link)
-        findImageOnScreen("websiteImages/secondWebsiteLoadIcon.png",timeoutDuration = 20,grayscaleFlag=True,confidenceValue=0.95,regionBox=(80,25,35,30))
+        findImageOnScreen("websiteImages/secondWebsiteLoadIcon.png",timeoutDuration = 20,grayscaleFlag=True,confidenceValue=0.95,regionBox=(1400,345,170,85))
         copyHTML("htmlIcon.png")
-        matchUpLinks = getAllOddLinks(os.getcwd() + "/localHTMLFiles/secondWebsiteOrigin.html",aLinkClassName=os.getenv('SECOND_WEBSITE_LINK_ELEMENT_CLASS'))
+
+        matchUpLinks = secondWebsiteGetAllOddLinks(htmlFileName = os.getcwd() + "/localHTMLFiles/secondWebsiteOrigin.html",divContainerClassName=os.getenv('SECOND_WEBSITE_DIV_ELEMENT_CLASS'),invalidInnerDivContainerClassName=os.getenv("SECOND_WEBSITE_INVALID_DIV_ELEMENT_CLASS"),aLinkClassName=os.getenv('SECOND_WEBSITE_LINK_ELEMENT_CLASS'))
+        if matchUpLinks == "Retry":
+            matchUpLinks = secondWebsiteGetAllOddLinks(htmlFileName = os.getcwd() + "/localHTMLFiles/secondWebsiteOrigin.html",divContainerClassName=os.getenv('SECOND_WEBSITE_DIV_ELEMENT_CLASS'),invalidInnerDivContainerClassName=os.getenv("SECOND_WEBSITE_INVALID_DIV_ELEMENT_CLASS"),aLinkClassName=os.getenv('SECOND_WEBSITE_LINK_ELEMENT_CLASS'),retry=True)
         for index in range(len(matchUpLinks)):
             link = matchUpLinks[index]
             goToWebsite(link)
             try:
-                matchWinnerIconLocation=findImageOnScreen("websiteImages/secondWebsiteOddsLoadedIcon.png",timeoutDuration = 20,grayscaleFlag=True,confidenceValue=0.99,regionBox=(556,606,693,624))
+                matchWinnerIconLocation=findImageOnScreen("websiteImages/secondWebsiteOddsLoadedIcon.png",timeoutDuration = 20,grayscaleFlag=True,confidenceValue=0.99)
             except ImageNotFoundOnScreenError as inst:
                 htmlFetchingErrorWebhook.send(content=traceback.format_exc())
                 continue
@@ -212,7 +307,10 @@ def secondWebsiteHTMLCollector(link:str):
         htmlFetchingErrorWebhook.send(content=traceback.format_exc())
     except ImageFileNotFoundError as inst: 
         htmlFetchingErrorWebhook.send(content=traceback.format_exc())
-
+    except NoAnchorTagsPresentInLocalHTMLFileError as inst:
+        htmlFetchingErrorWebhook.send(content=traceback.format_exc())
+    except ImageNotFoundOnScreenError as inst:
+        htmlFetchingErrorWebhook.send(content=traceback.format_exc())
 
 def thirdWebsiteHTMLCollector(link:str):
     try:
@@ -229,22 +327,28 @@ def thirdWebsiteHTMLCollector(link:str):
         htmlFetchingErrorWebhook.send(content=traceback.format_exc()) 
     except ImageNotFoundOnScreenError as inst:
         htmlFetchingErrorWebhook.send(content=traceback.format_exc())
+    except NoAnchorTagsPresentInLocalHTMLFileError as inst:
+        htmlFetchingErrorWebhook.send(content=traceback.format_exc())
 
 def fourthWebsiteHTMLCollector(link:str):
     htmlFetchingErrorWebhook = SyncWebhook.from_url(os.getenv('HTML_FETCHING_ERROR_NOTIF'))
     try:
-        goToWebsite(link)
-        findImageOnScreen("websiteImages/fourthWebsiteLoadIcon.png", timeoutDuration = 20, grayscaleFlag=True, regionBox=(411,373,76,41))
-        copyHTML("htmlIcon.png")
+        p = multiprocessing.Process(target=openFirefox,args=(link,))
+        p.start()
+        findImageOnScreen("websiteImages/fourthWebsiteLoadIcon.png", timeoutDuration = 20, confidenceValue=0.90, grayscaleFlag=True)
+        copyFireFoxHTML("firefoxHtmlIcon.png")
         createLocalHTMLFile(os.getcwd() + "/localHTMLFiles/fourthWebsiteHTMLFiles/page.html",bodyFilter=False) 
         time.sleep(1)
-
+        os.system("pkill firefox")
+        p.join()
     except LocalHTMLFileNotPresent as inst: #Inst refers to the actual instance of the error/exception
         #Here I'm sending the text of the exception to our Discord Server through our webhook
         htmlFetchingErrorWebhook.send(content=traceback.format_exc())
     except ImageFileNotFoundError as inst: 
         htmlFetchingErrorWebhook.send(content=traceback.format_exc()) 
     except ImageNotFoundOnScreenError as inst:
+        htmlFetchingErrorWebhook.send(content=traceback.format_exc())
+    except NoAnchorTagsPresentInLocalHTMLFileError as inst:
         htmlFetchingErrorWebhook.send(content=traceback.format_exc())
 
 #Custom Exceptions
@@ -271,6 +375,9 @@ class NoAnchorTagsPresentInLocalHTMLFileError(Exception):
         self.localHTMLFile = localHTMLFile
         super().__init__("Beautiful Soup could not find any anchor tags present in the local HTML file: " + localHTMLFile + " check to see if the HTML File actually has HTML inside of it, if so, then the anchor tag class name for the Matchup links has probably changed")
 
+class FirstWebsiteNoOddsLoadedError(Exception):
+    def __init(self):
+        super().__init__("Pyautogui could not find the icons on the screen that signal the program that the odds have been loaded.")
 
 def resetChrome():
     chromeSettingsIcon = findImageOnScreen("chromeSettingsIcon.png",timeoutDuration = 20,grayscaleFlag=True,regionBox=(1880,55,40,66))
@@ -290,7 +397,7 @@ def resetChrome():
     time.sleep(2)
 
 def openChrome():
-    chromeIcon = findImageOnScreen("chromeIcon.png",timeoutDuration = 20,grayscaleFlag=True)
+    chromeIcon = findImageOnScreen("chromeIcon.png",timeoutDuration = 20, regionBox=(0,50,80,400),grayscaleFlag=True)
     pyautogui.leftClick(chromeIcon)
 
     chromeWindowsIcon = findImageOnScreen("chromeWindowIcon.png",timeoutDuration = 20,grayscaleFlag=True)
@@ -313,7 +420,11 @@ def removeOldHTMLFiles():
         os.remove("/localHTMLFiles/thirdWebsiteHTMLFiles/page.html")
 
     for x in range(1,len(os.listdir("./localHTMLFiles/firstWebsiteHTMLFiles"))):
-        os.remove("./localHTMLFiles/firstWebsiteHTMLFiles/page" + str(x) + ".html")
+        if os.path.exists("./localHTMLFiles/firstWebsiteHTMLFiles/page" + str(x) + ".html"):
+            os.remove("./localHTMLFiles/firstWebsiteHTMLFiles/page" + str(x) + ".html")
 
     for x in range(1,len(os.listdir("./localHTMLFiles/secondWebsiteHTMLFiles"))):
-        os.remove("./localHTMLFiles/secondWebsiteHTMLFiles/page" + str(x) + ".html")
+        if os.path.exists("./localHTMLFiles/secondWebsiteHTMLFiles/page" + str(x) + ".html"):
+            os.remove("./localHTMLFiles/secondWebsiteHTMLFiles/page" + str(x) + ".html")
+
+

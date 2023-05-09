@@ -47,14 +47,22 @@ class Matchup:
     def addHandicapLineOdds(self,currentBettingSite:str,currentBettingSiteLink:str,firstOdd:str,secondOdd:str,handicapOne:str,handicapTwo:str) -> bool:
         if(self.teamOne in handicapOne):
             firstOdd,secondOdd = Matchup.convertOddsToDecimal(firstOdd,secondOdd)
-            self.teamOneHandicapLineOdds[currentBettingSite] = (handicapOne,firstOdd)
-            self.teamTwoHandicapLineOdds[currentBettingSite] = (handicapTwo,secondOdd)
-            self.bettingSiteLinks[currentBettingSite] = currentBettingSiteLink
+            if currentBettingSite not in self.teamOneHandicapLineOdds:
+                self.teamOneHandicapLineOdds[currentBettingSite] = [(handicapOne,firstOdd)]
+                self.teamTwoHandicapLineOdds[currentBettingSite] = [(handicapTwo,secondOdd)]
+            else:
+                self.teamOneHandicapLineOdds[currentBettingSite].append((handicapOne,firstOdd))
+                self.teamTwoHandicapLineOdds[currentBettingSite].append((handicapTwo,secondOdd))
+            self.bettingSiteLinks[currentBettingSite] = currentBettingSiteLink    
             return True
         elif(self.teamOne in handicapTwo):
             firstOdd,secondOdd = Matchup.convertOddsToDecimal(firstOdd,secondOdd)
-            self.teamOneHandicapLineOdds[currentBettingSite] = (handicapTwo,secondOdd)
-            self.teamTwoHandicapLineOdds[currentBettingSite] = (handicapOne,firstOdd)
+            if currentBettingSite not in self.teamTwoHandicapLineOdds:
+                self.teamOneHandicapLineOdds[currentBettingSite] = [(handicapTwo,secondOdd)]
+                self.teamTwoHandicapLineOdds[currentBettingSite] = [(handicapOne,firstOdd)]
+            else:
+                self.teamOneHandicapLineOdds[currentBettingSite].append((handicapTwo,secondOdd))
+                self.teamTwoHandicapLineOdds[currentBettingSite].append((handicapOne,firstOdd))
             self.bettingSiteLinks[currentBettingSite] = currentBettingSiteLink
             return True
         else:
@@ -63,14 +71,23 @@ class Matchup:
     def addTotalLineOdds(self,currentBettingSite:str,currentBettingSiteLink:str,firstOdd:str,secondOdd:str,totalBoundaryOne:str,totalBoundaryTwo:str)-> bool:
         if("O" in totalBoundaryOne):
             firstOdd,secondOdd = Matchup.convertOddsToDecimal(firstOdd,secondOdd)
-            self.overTotalLineOdds[currentBettingSite] = (totalBoundaryOne,firstOdd)
-            self.underTotalLineOdds[currentBettingSite] = (totalBoundaryTwo,secondOdd)
+            if currentBettingSite not in self.overTotalLineOdds:
+                self.overTotalLineOdds[currentBettingSite] = [(totalBoundaryOne,firstOdd)]
+                self.underTotalLineOdds[currentBettingSite] = [(totalBoundaryTwo,secondOdd)]
+            else:
+                self.overTotalLineOdds[currentBettingSite].append((totalBoundaryOne,firstOdd))
+                self.underTotalLineOdds[currentBettingSite].append((totalBoundaryTwo,secondOdd))
             self.bettingSiteLinks[currentBettingSite] = currentBettingSiteLink
             return True
+        
         elif("U" in totalBoundaryOne):
             firstOdd,secondOdd = Matchup.convertOddsToDecimal(firstOdd,secondOdd)
-            self.overTotalLineOdds[currentBettingSite] = (totalBoundaryTwo,secondOdd)
-            self.underTotalLineOdds[currentBettingSite] = (totalBoundaryOne,firstOdd)
+            if currentBettingSite not in self.underTotalLineOdds:
+                self.overTotalLineOdds[currentBettingSite] = [(totalBoundaryTwo,secondOdd)]
+                self.underTotalLineOdds[currentBettingSite] = [(totalBoundaryOne,firstOdd)]
+            else:
+                self.overTotalLineOdds[currentBettingSite].append((totalBoundaryTwo,secondOdd))
+                self.underTotalLineOdds[currentBettingSite].append((totalBoundaryOne,firstOdd))
             self.bettingSiteLinks[currentBettingSite] = currentBettingSiteLink
             return True
         else:
@@ -82,7 +99,7 @@ class Matchup:
                 arbitragePercentage = abs((1 / float(teamOneOddValue)) + (1 / float(teamTwoOddValue)))
                 arbitrageHash = hash((teamOneOddValue,teamTwoOddValue,firstBettingSiteKey,secondBettingSiteKey,arbitragePercentage,"Moneyline"))
                 if (arbitragePercentage < 1.0 and arbitrageHash not in dataframeInformation["Hash"]):
-                    Matchup.arbitrageWebhook.send(content="Arbitrage Opportunity found:\n" + 
+                    Matchup.arbitrageWebhook.send(content="MONEY LINE Arbitrage Opportunity found:\n" + 
                     firstBettingSiteKey + " : " + self.teamOne + " @ " +  teamOneOddValue + " " + self.bettingSiteLinks[firstBettingSiteKey] + "\n" +
                     secondBettingSiteKey + " : " + self.teamTwo + " @ " + teamTwoOddValue + " " + self.bettingSiteLinks[secondBettingSiteKey] + "\n" +
                     "Arbitrage Percentage: " + str(arbitragePercentage))
@@ -96,50 +113,58 @@ class Matchup:
                         self.highestMoneylineArbPercentage = arbitragePercentage
 
     def handicapArbitrageCheck(self,dataframeInformation:dict) -> None:
-        for firstBettingSiteKey,teamOneHandicapOddInfo in self.teamOneHandicapLineOdds.items():
-            for secondBettingSiteKey,teamTwoHandicapOddInfo in self.teamTwoHandicapLineOdds.items():
-                handicapOne,handicapOneOdd = teamOneHandicapOddInfo
-                handicapTwo,handicapTwoOdd = teamTwoHandicapOddInfo
-                if handicapOne != handicapTwo:
-                    continue
-                arbitragePercentage = abs((1 / float(handicapOneOdd)) + (1 / float(handicapTwoOdd)))
-                arbitrageHash = hash((handicapOneOdd,handicapTwoOdd,firstBettingSiteKey,secondBettingSiteKey,arbitragePercentage,"Handicap"))
-                if (arbitragePercentage < 1.0 and arbitrageHash not in dataframeInformation["Hash"]):
-                    Matchup.arbitrageWebhook.send(content="Arbitrage Opportunity found:\n" + 
-                    firstBettingSiteKey + " : " + self.teamOne + " @ " +  handicapOneOdd + " " + self.bettingSiteLinks[firstBettingSiteKey] + "\n" +
-                    secondBettingSiteKey + " : " + self.teamTwo + " @ " + handicapTwoOdd + " " + self.bettingSiteLinks[secondBettingSiteKey] + "\n" +
-                    "Arbitrage Percentage: " + str(arbitragePercentage))
-                    dataframeInformation["Matchup Header"].append(self.teamOne + " @ " + self.teamTwo)
-                    dataframeInformation["Type of bet"].append("Handicap")
-                    dataframeInformation["Team 1 Odd"].append(handicapOneOdd)
-                    dataframeInformation["Team 2 Odd"].append(handicapTwoOdd)
-                    dataframeInformation["Arb Percentage"].append(arbitragePercentage)
-                    dataframeInformation["Hash"].append(arbitrageHash)
-                    if arbitragePercentage < self.highestHandicapLineArbPercentage:
-                        self.highestHandicapLineArbPercentage = arbitragePercentage
+        for firstBettingSiteKey,teamOneHandicapOddInfoList in self.teamOneHandicapLineOdds.items():
+            for teamOneHandicapOddInfo in teamOneHandicapOddInfoList:
+                for secondBettingSiteKey,teamTwoHandicapOddInfoList in self.teamTwoHandicapLineOdds.items():
+                    for teamTwoHandicapOddInfo in teamTwoHandicapOddInfoList:
+                        handicapOne,handicapOneOdd = teamOneHandicapOddInfo
+                        handicapTwo,handicapTwoOdd = teamTwoHandicapOddInfo
+
+                        extractedTeamOne, handicapOneValue= handicapOne.split("@")
+                        extractedTeamTwo, handicapTwoValue= handicapTwo.split("@")
+                        if handicapOneValue[1:] != handicapTwoValue[1:] or handicapOneValue[0] == handicapTwoValue[0] or extractedTeamOne == extractedTeamTwo:
+                            continue
+                        arbitragePercentage = abs((1 / float(handicapOneOdd)) + (1 / float(handicapTwoOdd)))
+                        arbitrageHash = hash((handicapOneOdd,handicapTwoOdd,firstBettingSiteKey,secondBettingSiteKey,arbitragePercentage,"Handicap"))
+                        if (arbitragePercentage < 1.0 and arbitrageHash not in dataframeInformation["Hash"]):
+                            Matchup.arbitrageWebhook.send(content="HANDICAP LINE Arbitrage Opportunity found:\n" + 
+                            firstBettingSiteKey + " : " + self.teamOne + " @ " +  handicapOneOdd + " " + self.bettingSiteLinks[firstBettingSiteKey] + "\n" +
+                            secondBettingSiteKey + " : " + self.teamTwo + " @ " + handicapTwoOdd + " " + self.bettingSiteLinks[secondBettingSiteKey] + "\n" +
+                            "Arbitrage Percentage: " + str(arbitragePercentage))
+                            dataframeInformation["Matchup Header"].append(self.teamOne + " @ " + self.teamTwo)
+                            dataframeInformation["Type of bet"].append("Handicap")
+                            dataframeInformation["Team 1 Odd"].append(handicapOneOdd)
+                            dataframeInformation["Team 2 Odd"].append(handicapTwoOdd)
+                            dataframeInformation["Arb Percentage"].append(arbitragePercentage)
+                            dataframeInformation["Hash"].append(arbitrageHash)
+                            if arbitragePercentage < self.highestHandicapLineArbPercentage:
+                                self.highestHandicapLineArbPercentage = arbitragePercentage
                         
     def totalArbitrageCheck(self,dataframeInformation:dict) -> None:
-        for firstBettingSiteKey,overTotalOddInfo in self.overTotalLineOdds.items():
-            for secondBettingSiteKey,underTotalOddInfo in self.underTotalLineOdds.items():
-                totalBoundaryOne,totalOddOne = overTotalOddInfo
-                totalBoundaryTwo,totalOddTwo = underTotalOddInfo
-                if totalBoundaryOne != totalBoundaryTwo:
-                    continue
-                arbitragePercentage = abs((1 / float(totalOddOne)) + (1 / float(totalOddTwo)))
-                arbitrageHash = hash((totalOddOne,totalOddTwo,firstBettingSiteKey,secondBettingSiteKey,arbitragePercentage,"Total"))
-                if (arbitragePercentage < 1.0 and arbitrageHash not in dataframeInformation["Hash"]):
-                    Matchup.arbitrageWebhook.send(content="Arbitrage Opportunity found:\n" + 
-                    firstBettingSiteKey + " : " + self.teamOne + " @ " +  totalOddOne + " " + self.bettingSiteLinks[firstBettingSiteKey] + "\n" +
-                    secondBettingSiteKey + " : " + self.teamTwo + " @ " + totalOddTwo + " " + self.bettingSiteLinks[secondBettingSiteKey] + "\n" +
-                    "Arbitrage Percentage: " + str(arbitragePercentage))
-                    dataframeInformation["Matchup Header"].append(self.teamOne + " @ " + self.teamTwo)
-                    dataframeInformation["Type of bet"].append("Total")
-                    dataframeInformation["Team 1 Odd"].append(totalOddOne)
-                    dataframeInformation["Team 2 Odd"].append(totalOddTwo)
-                    dataframeInformation["Arb Percentage"].append(arbitragePercentage)
-                    dataframeInformation["Hash"].append(arbitrageHash)
-                    if arbitragePercentage < self.highestTotalLineArbPercentage:
-                        self.highestTotalLineArbPercentage = arbitragePercentage            
+        for firstBettingSiteKey,overTotalOddInfoList in self.overTotalLineOdds.items():
+            for overTotalOddInfo in overTotalOddInfoList:
+                for secondBettingSiteKey,underTotalOddInfoList in self.underTotalLineOdds.items():
+                    for underTotalOddInfo in underTotalOddInfoList:
+                        totalTitleOne, totalBoundaryOne,totalOddOne = overTotalOddInfo[0].split(" ") + [overTotalOddInfo[1]]
+                        totalTitleTwo,totalBoundaryTwo,totalOddTwo = underTotalOddInfo[0].split(" ") + [underTotalOddInfo[1]]
+
+                        if totalBoundaryOne != totalBoundaryTwo or totalTitleOne == totalTitleTwo:
+                            continue
+                        arbitragePercentage = abs((1 / float(totalOddOne)) + (1 / float(totalOddTwo)))
+                        arbitrageHash = hash((totalOddOne,totalOddTwo,firstBettingSiteKey,secondBettingSiteKey,arbitragePercentage,"Total"))
+                        if (arbitragePercentage < 1.0 and arbitrageHash not in dataframeInformation["Hash"]):
+                            Matchup.arbitrageWebhook.send(content="TOTAL LINE Arbitrage Opportunity found:\n" + 
+                            firstBettingSiteKey + " : " + self.teamOne + " @ " +  totalOddOne + " " + self.bettingSiteLinks[firstBettingSiteKey] + "\n" +
+                            secondBettingSiteKey + " : " + self.teamTwo + " @ " + totalOddTwo + " " + self.bettingSiteLinks[secondBettingSiteKey] + "\n" +
+                            "Arbitrage Percentage: " + str(arbitragePercentage))
+                            dataframeInformation["Matchup Header"].append(self.teamOne + " @ " + self.teamTwo)
+                            dataframeInformation["Type of bet"].append("Total")
+                            dataframeInformation["Team 1 Odd"].append(totalOddOne)
+                            dataframeInformation["Team 2 Odd"].append(totalOddTwo)
+                            dataframeInformation["Arb Percentage"].append(arbitragePercentage)
+                            dataframeInformation["Hash"].append(arbitrageHash)
+                            if arbitragePercentage < self.highestTotalLineArbPercentage:
+                                self.highestTotalLineArbPercentage = arbitragePercentage            
 
                     
 
@@ -161,6 +186,7 @@ class Matchup:
             returnList.append(convertedInputOddOne)
         else:
             returnList.append(inputOddOne)
+
         
         if (inputOddTwo[0] == "+") and ("." not in inputOddTwo):
             convertedInputOddTwo = str(1 + (int(inputOddTwo) / 100))
@@ -170,7 +196,7 @@ class Matchup:
             returnList.append(convertedInputOddTwo)
         else:
             returnList.append(inputOddTwo)
-        
+            
         return returnList
 
 
