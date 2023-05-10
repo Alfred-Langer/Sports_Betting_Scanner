@@ -122,7 +122,7 @@ class Matchup:
 
                         extractedTeamOne, handicapOneValue= handicapOne.split("@")
                         extractedTeamTwo, handicapTwoValue= handicapTwo.split("@")
-                        if handicapOneValue[1:] != handicapTwoValue[1:] or handicapOneValue[0] == handicapTwoValue[0] or extractedTeamOne == extractedTeamTwo:
+                        if handicapOneValue == "" or handicapTwoValue == "" or handicapOneValue[1:] != handicapTwoValue[1:] or handicapOneValue[0] == handicapTwoValue[0] or extractedTeamOne == extractedTeamTwo:
                             continue
                         arbitragePercentage = abs((1 / float(handicapOneOdd)) + (1 / float(handicapTwoOdd)))
                         arbitrageHash = hash((handicapOneOdd,handicapTwoOdd,firstBettingSiteKey,secondBettingSiteKey,arbitragePercentage,"Handicap"))
@@ -178,7 +178,9 @@ class Matchup:
     def convertOddsToDecimal(inputOddOne: str, inputOddTwo: str) -> list[str,str]:
         returnList = []
 
-        if (inputOddOne[0] == "+") and ("." not in inputOddOne):
+        if inputOddOne == '' and inputOddTwo == '':
+            return [1.0,1.0]
+        elif (inputOddOne[0] == "+") and ("." not in inputOddOne):
             convertedInputOddOne = str(1 + (int(inputOddOne) / 100))
             returnList.append(convertedInputOddOne)
         elif(inputOddOne[0] == "-") and ("." not in inputOddOne):

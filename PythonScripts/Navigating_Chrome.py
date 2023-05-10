@@ -7,7 +7,7 @@ from discord import SyncWebhook
 from bs4 import BeautifulSoup
 import traceback
 import subprocess
-import multiprocessing
+from threading import Thread
 
 def openFirefox(link):
     subprocess.call([os.getcwd() + "/bashScript/openUpBrowser.sh", link])
@@ -60,7 +60,7 @@ def findOneOfTheImagesOnScreen(images:tuple, timeoutDuration:int, scrollFlag:boo
         elif scrollFlag:
             #Scroll Flag is specifically for locating the HTML Tags. Somtimes when you Inspect Element, the display shows the middle of the HTML content.
             #This block of code just clicks on the up arrow key of the Inspect Element scroll bar, in order to scroll up.
-            pyautogui.click(1911,145,button='left',clicks=10)
+            pyautogui.click(1911,145,button='left',clicks=50)
         time.sleep(1) #Adding a sleep for 1 second here, apparently helps to reduce CPU Usage for this process.
 
     raise ImageNotFoundOnScreenError("ImageNotPresentError: Could not find " + images[0] + " or " + images[1] + " on the screen")
@@ -107,20 +107,23 @@ def copyHTML(htmlIcon:str,scrollFlagInput:bool = False):
     #Close Inspect Element
     inspectElement()
 
-def copyFireFoxHTML(htmlIcon:str,scrollFlagInput:bool = False):
+def copyFireFoxHTML(htmlIcon:str,webhook,scrollFlagInput:bool = False):
     #Open Inspect Element
-    inspectElement()
     
+    inspectElement()
+    time.sleep(3)
     #Locate HTML tags in inspect Element and copy the HTML content to the clipboard
+    
     x,y = findImageOnScreen(htmlIcon,timeoutDuration = 20,scrollFlag = scrollFlagInput, grayscaleFlag=True, regionBox=(70,880,65,40), confidenceValue=0.90)
     pyautogui.rightClick(x,y)
     x,y = findImageOnScreen("copyOptionFirefox.png",timeoutDuration = 5, regionBox=(95,790,130,40), grayscaleFlag=True)
     pyautogui.moveTo(x,y)
     x,y = findImageOnScreen("copyOuterHtmlOptionButtonFirefox.png",timeoutDuration = 5, regionBox=(350,815,160,40),grayscaleFlag=True)
     pyautogui.moveTo(x,y)
-    time.sleep(0.25)
+    time.sleep(1)
     pyautogui.click(x,y)
 
+        
     #Close Inspect Element
     inspectElement()
 
@@ -333,13 +336,13 @@ def thirdWebsiteHTMLCollector(link:str):
 def fourthWebsiteHTMLCollector(link:str):
     htmlFetchingErrorWebhook = SyncWebhook.from_url(os.getenv('HTML_FETCHING_ERROR_NOTIF'))
     try:
-        p = multiprocessing.Process(target=openFirefox,args=(link,))
+        p = Thread(target=openFirefox,args=(link,))
         p.start()
         findImageOnScreen("websiteImages/fourthWebsiteLoadIcon.png", timeoutDuration = 20, confidenceValue=0.90, grayscaleFlag=True)
-        copyFireFoxHTML("firefoxHtmlIcon.png")
+        copyFireFoxHTML("firefoxHtmlIcon.png",htmlFetchingErrorWebhook)
         createLocalHTMLFile(os.getcwd() + "/localHTMLFiles/fourthWebsiteHTMLFiles/page.html",bodyFilter=False) 
         time.sleep(1)
-        os.system("pkill firefox")
+        closeFirefox()
         p.join()
     except LocalHTMLFileNotPresent as inst: #Inst refers to the actual instance of the error/exception
         #Here I'm sending the text of the exception to our Discord Server through our webhook
@@ -404,8 +407,14 @@ def openChrome():
     while(chromeWindowsIcon == None):
         chromeWindowsIcon = findImageOnScreen("chromeWindowIcon.png",timeoutDuration = 20,grayscaleFlag=True)
 
-
-
+def closeFirefox():
+    fireFoxIcons = "Something"
+    while fireFoxIcons is not None:
+        fireFoxIcons = findImageOnScreen("firefoxCloseButtonIcons.png",timeoutDuration=2,grayscaleFlag=True,returnNothing=True)
+        if fireFoxIcons is not None:
+            pyautogui.leftClick(fireFoxIcons.x + 68,fireFoxIcons.y - 20)
+    print('complete')
+    
 def removeOldHTMLFiles():
     if os.path.exists("/localHTMLFiles/firstWebsiteOrigin.html"):
         os.remove("/localHTMLFiles/firstWebsiteOrigin.html")

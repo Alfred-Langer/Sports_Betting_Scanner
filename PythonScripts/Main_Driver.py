@@ -5,8 +5,7 @@ if __name__ == "__main__":
     import os
     import ast
     import pandas as pd
-    import Matchup_Class
-    from Navigating_Chrome import firstWebsiteHTMLCollector,secondWebsiteHTMLCollector,thirdWebsiteHTMLCollector,fourthWebsiteHTMLCollector,openChrome,resetChrome,removeOldHTMLFiles
+    from Navigating_Chrome import firstWebsiteHTMLCollector,secondWebsiteHTMLCollector,thirdWebsiteHTMLCollector,fourthWebsiteHTMLCollector,openChrome,resetChrome,closeFirefox,removeOldHTMLFiles
     from Selenium_HTML_Parsing import firstWebsiteParserBeautifulSoup,secondWebsiteParserBeautifulSoup,thirdWebsiteParserBeautifulSoup,fourthWebsiteParserBeautifulSoup
     from threading import Thread
     from selenium import webdriver
@@ -33,7 +32,9 @@ if __name__ == "__main__":
     
     
     while True: 
-        for index in range(2,len(ast.literal_eval(os.getenv('BETTING_SITE_LINK_DICTIONARY'))["firstWebsite"])):
+        removeOldHTMLFiles()
+        for index in range(0,len(ast.literal_eval(os.getenv('BETTING_SITE_LINK_DICTIONARY'))["firstWebsite"])):
+            
             allMatchups = {}
             dataframeInformation = {
                 "Matchup Header":[],
@@ -45,6 +46,7 @@ if __name__ == "__main__":
                 "Hash":[]
             }
             openChrome()
+            
             htmlCollectionT1 = Thread(target=firstWebsiteHTMLCollector,args=(ast.literal_eval(os.getenv('BETTING_SITE_LINK_DICTIONARY'))["firstWebsite"][index],))
             htmlCollectionT1.start()
             htmlCollectionT1.join()
@@ -58,6 +60,7 @@ if __name__ == "__main__":
 
             parsingT2 = Thread(target=secondWebsiteParserBeautifulSoup, args =(ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['Sport'],ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['League'],ast.literal_eval(os.getenv('BETTING_SITE_LINK_DICTIONARY'))["secondWebsite"][index],ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['Table Name'],mycursor,allMatchups))
             parsingT2.start()
+            
             htmlCollectionT3 = Thread(target=thirdWebsiteHTMLCollector,args=(ast.literal_eval(os.getenv('BETTING_SITE_LINK_DICTIONARY'))["thirdWebsite"][index],))
             htmlCollectionT3.start()
             parsingT2.join()
@@ -65,9 +68,10 @@ if __name__ == "__main__":
 
             parsingT3 = Thread(target=thirdWebsiteParserBeautifulSoup, args =(ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['Sport'],ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['League'],ast.literal_eval(os.getenv('BETTING_SITE_LINK_DICTIONARY'))["thirdWebsite"][index],ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['Table Name'],mycursor,allMatchups))
             parsingT3.start()
+
             htmlCollectionT4 = Thread(target=fourthWebsiteHTMLCollector,args=(ast.literal_eval(os.getenv('BETTING_SITE_LINK_DICTIONARY'))["fourthWebsite"][index],))
             htmlCollectionT4.start()
-            parsingT3.join()
+            #parsingT3.join()
             htmlCollectionT4.join()
 
             parsingT4 = Thread(target=fourthWebsiteParserBeautifulSoup,args =(ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['Sport'],ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['League'],ast.literal_eval(os.getenv('BETTING_SITE_LINK_DICTIONARY'))["fourthWebsite"][index],ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['Table Name'],mycursor,allMatchups))
