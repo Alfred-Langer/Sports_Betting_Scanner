@@ -1,43 +1,42 @@
 import os
 import mysql.connector
+from pymongo.database import Database
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
-from Matchup_Class import Matchup
+from PythonScripts.Matchup_Class import Matchup
 from discord import SyncWebhook
 import traceback
 from bs4 import BeautifulSoup
 
 
-def databaseTeamNameCheck(nameOne:str,nameTwo:str,tableName:str,myCursorObject:mysql.connector.cursor.MySQLCursor):
-    try:
-        parsingErrorWebhook = SyncWebhook.from_url(os.getenv('PARSING_ERROR_NOTIF'))
-        myCursorObject.execute('SELECT valueTeamName FROM ' + tableName + ' WHERE keyTeamName = "' + nameOne + '"')
-        teams = myCursorObject.fetchall()
-        teamOne = teams[0]
-        myCursorObject.execute('SELECT valueTeamName FROM ' + tableName + ' WHERE keyTeamName = "' + nameTwo + '"')
-        teams = myCursorObject.fetchall()
-        teamTwo = teams[0]
+def databaseTeamNameCheck(nameOne:str,nameTwo:str,tableName:str,mongoDatabase:Database):
 
-        if teamOne is None:
-            #Discord Message saying that nameOne does not exist in MySQL Database
-            parsingErrorWebhook.send(content=nameOne + " Does not exist in MySQL Database. Update whenever possible")
+        parsingErrorWebhook = SyncWebhook.from_url(os.getenv('PARSING_ERROR_NOTIF'))
+        collection = mongoDatabase[tableName]
+        result = collection.find_one({"keyTeamName":nameOne})
+        if result is None:
+            parsingErrorWebhook.send(content=traceback.format_exc())
+            parsingErrorWebhook.send(content="We are most likely missing a team in a table in the database.\nTableName: " + tableName + "\nTeamNameOne: " + nameOne)
+            teamOne = None
         else:
-            teamOne = teamOne[0]
-        if teamTwo is None:
-            #Discord Message saying that nameTwo does not exist in MySQL Database
-            parsingErrorWebhook.send(content=nameTwo + " Does not exist in MySQL Database. Update whenever possible")
+            teamOne = result["valueTeamName"]
+
+        result = collection.find_one({"keyTeamName":nameTwo})
+        if result is None:
+            parsingErrorWebhook.send(content=traceback.format_exc())
+            parsingErrorWebhook.send(content="We are most likely missing a team in a table in the database.\nTableName: " + tableName + "\nTeamNameTwo: " + nameTwo)
+            teamTwo = None
         else:
-            teamTwo = teamTwo[0]
+            teamTwo = result["valueTeamName"]
+    
         
         return teamOne,teamTwo
 
-    except IndexError as inst:
-        parsingErrorWebhook.send(content=traceback.format_exc())
-        parsingErrorWebhook.send(content="We are most likely missing a team in a table in the database.\nTableName: " + tableName + "\nTeamNameOne: " + nameOne + "\nTeamNameTwo: " + nameTwo)
+    
 
 
 
-def firstWebsiteParserBeautifulSoup(sport:str,sportLeague:str,linkToBettingSite:str,tableName:str,myCursorObject:mysql.connector.cursor.MySQLCursor,allMatchups:dict):
+def firstWebsiteParserBeautifulSoup(sport:str,sportLeague:str,linkToBettingSite:str,tableName:str,mongoDatabase:Database,allMatchups:dict):
     parsingErrorWebhook = SyncWebhook.from_url(os.getenv('PARSING_ERROR_NOTIF'))
 
     try:
@@ -56,7 +55,7 @@ def firstWebsiteParserBeautifulSoup(sport:str,sportLeague:str,linkToBettingSite:
                         extractedTeamOne,extractedTeamTwo = [teamNameElement.text.upper() for teamNameElement in wholeMatchWinnerBlock.find_all("div",class_=os.getenv('FIRST_WEBSITE_TEAM_ELEMENT_CLASS_NAME'))]
                         moneyLineOddOne,moneyLineOddTwo = [oddElement.text for oddElement in wholeMatchWinnerBlock.find_all("span",class_=os.getenv("FIRST_WEBSITE_ODD_ELEMENT_CLASS_NAME"))]
                         
-                        teamOne,teamTwo = databaseTeamNameCheck(extractedTeamOne,extractedTeamTwo,tableName,myCursorObject)
+                        teamOne,teamTwo = databaseTeamNameCheck(extractedTeamOne,extractedTeamTwo,tableName,mongoDatabase)
                         if teamOne is None or teamTwo is None:
                             break         
                         currentMatchup = Matchup(sport,sportLeague,teamOne,teamTwo,allMatchups)
@@ -79,7 +78,7 @@ def firstWebsiteParserBeautifulSoup(sport:str,sportLeague:str,linkToBettingSite:
         parsingErrorWebhook.send(content=str(inst)+ " - " +str(type(inst)))
 
 
-def secondWebsiteParserBeautifulSoup(sport:str,sportLeague:str,linkToBettingSite:str,tableName:str,myCursorObject:mysql.connector.cursor.MySQLCursor,allMatchups:dict):
+def secondWebsiteParserBeautifulSoup(sport:str,sportLeague:str,linkToBettingSite:str,tableName:str,mongoDatabase:Database,allMatchups:dict):
     parsingErrorWebhook = SyncWebhook.from_url(os.getenv('PARSING_ERROR_NOTIF'))
     
     try:
@@ -98,9 +97,9 @@ def secondWebsiteParserBeautifulSoup(sport:str,sportLeague:str,linkToBettingSite
                         extractedTeamOne,extractedTeamTwo = [teamNameElement.text.upper() for teamNameElement in panel.find_all(class_=os.getenv('SECOND_WEBSITE_TEAM_ELEMENT_CLASS_NAME'))]
                         moneyLineOddOne,moneyLineOddTwo = [oddElement.text for oddElement in panel.find_all(class_=os.getenv('SECOND_WEBSITE_ODD_ELEMENT_CLASS_NAME'))]
                             
-                        teamOne,teamTwo = databaseTeamNameCheck(extractedTeamOne,extractedTeamTwo,tableName,myCursorObject)
+                        teamOne,teamTwo = databaseTeamNameCheck(extractedTeamOne,extractedTeamTwo,tableName,mongoDatabase)
                         if teamOne is None or teamTwo is None:
-                            continue
+                            break
                         
                         currentMatchup = Matchup.matchupExists(teamOne,teamTwo,allMatchups)
                         if currentMatchup == None: 
@@ -126,7 +125,7 @@ def secondWebsiteParserBeautifulSoup(sport:str,sportLeague:str,linkToBettingSite
     except Exception as inst:
         parsingErrorWebhook.send(content=traceback.format_exc())
 
-def thirdWebsiteParserBeautifulSoup(sport:str,sportLeague:str,linkToBettingSite:str,tableName:str,myCursorObject:mysql.connector.cursor.MySQLCursor,allMatchups:dict):
+def thirdWebsiteParserBeautifulSoup(sport:str,sportLeague:str,linkToBettingSite:str,tableName:str,mongoDatabase:Database,allMatchups:dict):
     parsingErrorWebhook = SyncWebhook.from_url(os.getenv('PARSING_ERROR_NOTIF'))
     
     try:
@@ -152,7 +151,7 @@ def thirdWebsiteParserBeautifulSoup(sport:str,sportLeague:str,linkToBettingSite:
                 extractedTeamOne = teamNames[teamNameIndex].text.upper().replace(" (MATCH)","")
                 extractedTeamTwo = teamNames[teamNameIndex + 1].text.upper().replace(" (MATCH)","")
 
-                teamOne,teamTwo = databaseTeamNameCheck(extractedTeamOne,extractedTeamTwo,tableName,myCursorObject)
+                teamOne,teamTwo = databaseTeamNameCheck(extractedTeamOne,extractedTeamTwo,tableName,mongoDatabase)
                 if teamOne is None or teamTwo is None:
                     continue
                 
@@ -185,7 +184,7 @@ def thirdWebsiteParserBeautifulSoup(sport:str,sportLeague:str,linkToBettingSite:
 
 
 
-def fourthWebsiteParserBeautifulSoup(sport:str,sportLeague:str,linkToBettingSite:str,tableName:str,myCursorObject:mysql.connector.cursor.MySQLCursor,allMatchups:dict):
+def fourthWebsiteParserBeautifulSoup(sport:str,sportLeague:str,linkToBettingSite:str,tableName:str,mongoDatabase:Database,allMatchups:dict):
     parsingErrorWebhook = SyncWebhook.from_url(os.getenv('PARSING_ERROR_NOTIF'))
     
     try:
@@ -251,7 +250,7 @@ def fourthWebsiteParserBeautifulSoup(sport:str,sportLeague:str,linkToBettingSite
         for index in range(0,len(moneyLineColumn),2):
             extractedTeamOne = team_names[index]
             extractedTeamTwo = team_names[index+1]
-            teamOne,teamTwo = databaseTeamNameCheck(extractedTeamOne,extractedTeamTwo,tableName,myCursorObject)
+            teamOne,teamTwo = databaseTeamNameCheck(extractedTeamOne,extractedTeamTwo,tableName,mongoDatabase)
             if teamOne is None or teamTwo is None:
                 continue
 

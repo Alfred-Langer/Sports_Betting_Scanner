@@ -1,11 +1,10 @@
-Test Files
-PythonScripts/__pycache__
-PythonScripts/Confidential_Variables_Main_Driver.py
-PythonScripts/Confidential_Variables_Navigating_Chrome.py
-PythonScripts/Confidential_Variables_Selenium_HTML_Parsing.py
-PythonScripts/Confidential_Variables_Matchup_Class.py
-PythonScripts/confidentialVariables.py
-PythonScripts/.env
 Betting_Env
+PythonScripts/__pycache__
+PythonScripts/.env
+PythonScripts/Client_Secret_Arb_App.json
+PythonScripts/Env_File_ID.py
 Screenshot_Images/websiteImages
+Test Files
+token_drive_v3.pickle
 *.csv
+
