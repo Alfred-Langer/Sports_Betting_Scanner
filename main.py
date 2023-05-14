@@ -26,7 +26,11 @@ if __name__ == "__main__":
         openChrome()
         resetChrome()
         Matchup.arbitrageWebhook.send(content="Starting Iteration")
-        for index in range(0,len(ast.literal_eval(os.getenv('BETTING_SITE_LINK_DICTIONARY'))["firstWebsite"])):
+
+
+
+
+        for index in range(0,len(ast.literal_eval(os.getenv('ESPORT_BETTING_SITE_LINK_DICTIONARY'))["firstWebsite"])):
             removeOldHTMLFiles()
             allMatchups = {}
             dataframeInformation = {
@@ -39,33 +43,33 @@ if __name__ == "__main__":
             }
             openChrome()
 
-            htmlCollectionT1 = Thread(target=firstWebsiteHTMLCollector,args=(ast.literal_eval(os.getenv('BETTING_SITE_LINK_DICTIONARY'))["firstWebsite"][index],))
+            htmlCollectionT1 = Thread(target=firstWebsiteHTMLCollector,args=(ast.literal_eval(os.getenv('ESPORT_BETTING_SITE_LINK_DICTIONARY'))["firstWebsite"][index],))
             htmlCollectionT1.start()
             htmlCollectionT1.join()
 
-            htmlCollectionT2 = Thread(target=secondWebsiteHTMLCollector,args=(ast.literal_eval(os.getenv('BETTING_SITE_LINK_DICTIONARY'))["secondWebsite"][index],))
+            htmlCollectionT2 = Thread(target=secondWebsiteHTMLCollector,args=(ast.literal_eval(os.getenv('ESPORT_BETTING_SITE_LINK_DICTIONARY'))["secondWebsite"][index],))
             htmlCollectionT2.start()
-            parsingT1 = Thread(target=firstWebsiteParserBeautifulSoup, args =(ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['Sport'],ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['League'],ast.literal_eval(os.getenv('BETTING_SITE_LINK_DICTIONARY'))["firstWebsite"][index],ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['Table Name'],mongoDB,allMatchups))
+            parsingT1 = Thread(target=firstWebsiteParserBeautifulSoup, args =(ast.literal_eval(os.getenv('ESPORTS_LEAGUES'))[index]['Sport'],ast.literal_eval(os.getenv('ESPORTS_LEAGUES'))[index]['League'],ast.literal_eval(os.getenv('ESPORT_BETTING_SITE_LINK_DICTIONARY'))["firstWebsite"][index],ast.literal_eval(os.getenv('ESPORTS_LEAGUES'))[index]['Table Name'],mongoDB,allMatchups))
             parsingT1.start()
             parsingT1.join()
             htmlCollectionT2.join()
 
-            htmlCollectionT3 = Thread(target=thirdWebsiteHTMLCollector,args=(ast.literal_eval(os.getenv('BETTING_SITE_LINK_DICTIONARY'))["thirdWebsite"][index],))
+            htmlCollectionT3 = Thread(target=thirdWebsiteHTMLCollector,args=(ast.literal_eval(os.getenv('ESPORT_BETTING_SITE_LINK_DICTIONARY'))["thirdWebsite"][index],))
             htmlCollectionT3.start()
-            parsingT2 = Thread(target=secondWebsiteParserBeautifulSoup, args =(ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['Sport'],ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['League'],ast.literal_eval(os.getenv('BETTING_SITE_LINK_DICTIONARY'))["secondWebsite"][index],ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['Table Name'],mongoDB,allMatchups))
+            parsingT2 = Thread(target=secondWebsiteParserBeautifulSoup, args =(ast.literal_eval(os.getenv('ESPORTS_LEAGUES'))[index]['Sport'],ast.literal_eval(os.getenv('ESPORTS_LEAGUES'))[index]['League'],ast.literal_eval(os.getenv('ESPORT_BETTING_SITE_LINK_DICTIONARY'))["secondWebsite"][index],ast.literal_eval(os.getenv('ESPORTS_LEAGUES'))[index]['Table Name'],mongoDB,allMatchups))
             parsingT2.start()
             parsingT2.join()
             htmlCollectionT3.join()
 
-            htmlCollectionT4 = Thread(target=fourthWebsiteHTMLCollector,args=(ast.literal_eval(os.getenv('BETTING_SITE_LINK_DICTIONARY'))["fourthWebsite"][index],))
+            htmlCollectionT4 = Thread(target=fourthWebsiteHTMLCollector,args=(ast.literal_eval(os.getenv('ESPORT_BETTING_SITE_LINK_DICTIONARY'))["fourthWebsite"][index],))
             htmlCollectionT4.start()
-            parsingT3 = Thread(target=thirdWebsiteParserBeautifulSoup, args =(ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['Sport'],ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['League'],ast.literal_eval(os.getenv('BETTING_SITE_LINK_DICTIONARY'))["thirdWebsite"][index],ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['Table Name'],mongoDB,allMatchups))
+            parsingT3 = Thread(target=thirdWebsiteParserBeautifulSoup, args =(ast.literal_eval(os.getenv('ESPORTS_LEAGUES'))[index]['Sport'],ast.literal_eval(os.getenv('ESPORTS_LEAGUES'))[index]['League'],ast.literal_eval(os.getenv('ESPORT_BETTING_SITE_LINK_DICTIONARY'))["thirdWebsite"][index],ast.literal_eval(os.getenv('ESPORTS_LEAGUES'))[index]['Table Name'],mongoDB,allMatchups))
             parsingT3.start()
             parsingT3.join()
             htmlCollectionT4.join()
 
             time.sleep(1)
-            parsingT4 = Thread(target=fourthWebsiteParserBeautifulSoup,args =(ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['Sport'],ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['League'],ast.literal_eval(os.getenv('BETTING_SITE_LINK_DICTIONARY'))["fourthWebsite"][index],ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['Table Name'],mongoDB,allMatchups))
+            parsingT4 = Thread(target=fourthWebsiteParserBeautifulSoup,args =(ast.literal_eval(os.getenv('ESPORTS_LEAGUES'))[index]['Sport'],ast.literal_eval(os.getenv('ESPORTS_LEAGUES'))[index]['League'],ast.literal_eval(os.getenv('ESPORT_BETTING_SITE_LINK_DICTIONARY'))["fourthWebsite"][index],ast.literal_eval(os.getenv('ESPORTS_LEAGUES'))[index]['Table Name'],mongoDB,allMatchups))
             parsingT4.start()
             parsingT4.join()
 
@@ -75,7 +79,7 @@ if __name__ == "__main__":
                 matchup.totalArbitrageCheck(dataframeInformation)
 
             bettingOpportunities = pd.DataFrame(dataframeInformation)
-            fileName = ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['Sport'] + ast.literal_eval(os.getenv('SPORTS_LEAGUES'))[index]['League'] + ".csv"
+            fileName = ast.literal_eval(os.getenv('ESPORTS_LEAGUES'))[index]['Sport'] + ast.literal_eval(os.getenv('ESPORTS_LEAGUES'))[index]['League'] + ".csv"
             bettingOpportunities.to_csv(fileName, mode='w', index=False)
             os.system("pkill chrome")
 

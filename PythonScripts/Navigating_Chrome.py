@@ -347,6 +347,88 @@ def fourthWebsiteHTMLCollector(link:str):
     except NoAnchorTagsPresentInLocalHTMLFileError as inst:
         htmlFetchingErrorWebhook.send(content=str(inst)+"==========================================================================")
 
+def firstSimpleWebsiteHTMLCollector(link:str):
+    try:
+        htmlFetchingErrorWebhook = SyncWebhook.from_url(os.getenv('HTML_FETCHING_ERROR_NOTIF'))
+        goToWebsite(link)
+        matchUpLinks = "undefined"
+        while matchUpLinks == "undefined":
+            findImageOnScreen("websiteImages/firstWebsiteSimpleLoadIcon.png",timeoutDuration = 20,grayscaleFlag=True,regionBox=(615,505,100,575)) #This website needs some extra time to load. This HTML icon indicates that all the HTML has been loaded and can be extracted.
+            copyHTML("htmlIcon.png")
+            createLocalHTMLFile(os.getcwd()  + "/localHTMLFiles/firstWebsiteOrigin.html") 
+
+    
+    #This is how I'm currently handling errors for website parsing
+
+    except LocalHTMLFileNotPresent as inst: #Inst refers to the actual instance of the error/exception
+        #Here I'm sending the text of the exception to our Discord Server through our webhook
+        htmlFetchingErrorWebhook.send(content=str(inst)+"==========================================================================")
+    except ImageFileNotFoundError as inst: 
+        htmlFetchingErrorWebhook.send(content=str(inst)+"==========================================================================") 
+    except ImageNotFoundOnScreenError as inst:
+        htmlFetchingErrorWebhook.send(content=inst)
+        if inst.imageFile == "websiteImages/firstWebsiteLoadIcon.png":
+            htmlFetchingErrorWebhook.send("It also might be possible that the link for this website's event is invalid so double check the environment file.\n\n==========================================================================")
+    except NoAnchorTagsPresentInLocalHTMLFileError as inst:
+        htmlFetchingErrorWebhook.send(content=str(inst)+"==========================================================================")
+    except FirstWebsiteNoOddsLoadedError as inst:
+        htmlFetchingErrorWebhook.send(content=str(inst)+"==========================================================================")
+
+def secondWebsiteSimpleHTMLCollector(link:str):
+    try:
+        htmlFetchingErrorWebhook = SyncWebhook.from_url(os.getenv('HTML_FETCHING_ERROR_NOTIF'))
+        if link =="a":
+            return
+        goToWebsite(link)
+        locationFlag = findImageOnScreen("websiteImages/secondWebsiteOkayButton.png",timeoutDuration = 12,grayscaleFlag=True,confidenceValue=0.95,returnNothing=True,regionBox=(745,555,505,135))
+        if locationFlag is not None:
+            pyautogui.leftClick(locationFlag)
+            locationPopup = findImageOnScreen("websiteImages/secondWebsitePopup.png",timeoutDuration = 15,grayscaleFlag=True,confidenceValue=0.95,returnNothing=True)
+            if locationPopup is not None:
+                pyautogui.leftClick(locationPopup.x+100,locationPopup.y+35)
+        
+        findImageOnScreen("websiteImages/secondWebsiteLoadIcon.png",timeoutDuration = 20,grayscaleFlag=True,confidenceValue=0.95,regionBox=(1400,345,170,85))
+        
+        skipFlag = findImageOnScreen("websiteImages/secondWebsiteSkipElement.png",timeoutDuration = 3,grayscaleFlag=True,confidenceValue=0.95,returnNothing=True)
+        if skipFlag is not None:
+            raise InvalidWebsiteLinkError(os.getenv('SECOND_WEBSITE'),link)
+        copyHTML("htmlIcon.png")
+        createLocalHTMLFile(os.getcwd()  + "/localHTMLFiles/secondWebsiteOrigin.html") 
+
+
+    except LocalHTMLFileNotPresent as inst: #Inst refers to the actual instance of the error/exception
+        #Here I'm sending the text of the exception to our Discord Server through our webhook
+        htmlFetchingErrorWebhook.send(content=str(inst)+"==========================================================================")
+    except ImageFileNotFoundError as inst: 
+        htmlFetchingErrorWebhook.send(content=str(inst)+"==========================================================================")
+    except NoAnchorTagsPresentInLocalHTMLFileError as inst:
+        htmlFetchingErrorWebhook.send(content=str(inst)+"==========================================================================")
+    except ImageNotFoundOnScreenError as inst:
+        htmlFetchingErrorWebhook.send(content=str(inst)+"==========================================================================")
+    except InvalidWebsiteLinkError as inst:
+        htmlFetchingErrorWebhook.send(content=str(inst)+"==========================================================================")
+
+
+def thirdWebsiteSimpleHTMLCollector(link:str):
+    try:
+        htmlFetchingErrorWebhook = SyncWebhook.from_url(os.getenv('HTML_FETCHING_ERROR_NOTIF'))
+        goToWebsite(link)
+        findImageOnScreen("websiteImages/thirdWebsiteSimpleLoadIcon.png",timeoutDuration = 20,grayscaleFlag=True)
+        copyHTML("htmlIcon.png",scrollFlagInput=True)
+        createLocalHTMLFile(os.getcwd() + "/localHTMLFiles/thirdWebsiteHTMLFiles/page.html",bodyFilter=False) 
+
+    except LocalHTMLFileNotPresent as inst: #Inst refers to the actual instance of the error/exception
+        #Here I'm sending the text of the exception to our Discord Server through our webhook
+        htmlFetchingErrorWebhook.send(content=str(inst)+"==========================================================================")
+    except ImageFileNotFoundError as inst: 
+        htmlFetchingErrorWebhook.send(content=str(inst)+"==========================================================================") 
+    except ImageNotFoundOnScreenError as inst:
+        htmlFetchingErrorWebhook.send(content=inst)
+        if inst.imageFile == "websiteImages/thirdWebsiteSimpleLoadIcon.png":
+            htmlFetchingErrorWebhook.send("It also might be possible that the link for this website's event is invalid so double check the environment file.\n\n==========================================================================")
+    except NoAnchorTagsPresentInLocalHTMLFileError as inst:
+        htmlFetchingErrorWebhook.send(content=str(inst)+"==========================================================================")
+
 #Custom Exceptions
 class ImageNotFoundOnScreenError(Exception):
     def __init__(self,imageFile:str):
