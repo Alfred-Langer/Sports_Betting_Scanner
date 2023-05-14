@@ -1,5 +1,4 @@
 import os
-import mysql.connector
 from pymongo.database import Database
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
@@ -75,7 +74,7 @@ def firstWebsiteParserBeautifulSoup(sport:str,sportLeague:str,linkToBettingSite:
             
     #Not entirely sure what exceptions can occur during this process, so until I know I'm going to catch every type of exception and send the message to the discord.
     except Exception as inst:
-        parsingErrorWebhook.send(content=str(inst)+ " - " +str(type(inst)))
+        parsingErrorWebhook.send(content=str(inst)+ " - " +str(type(inst)) + "\n\n" + traceback.format_exc()+ "\n==========================================================================")
 
 
 def secondWebsiteParserBeautifulSoup(sport:str,sportLeague:str,linkToBettingSite:str,tableName:str,mongoDatabase:Database,allMatchups:dict):
@@ -123,7 +122,7 @@ def secondWebsiteParserBeautifulSoup(sport:str,sportLeague:str,linkToBettingSite
     
     #Not entirely sure what exceptions can occur during this process, so until I know I'm going to catch every type of exception and send the message to the discord.
     except Exception as inst:
-        parsingErrorWebhook.send(content=traceback.format_exc())
+        parsingErrorWebhook.send(content = str(inst)+ " - " +str(type(inst)) + "\n\n" + traceback.format_exc()+ "\n==========================================================================")
 
 def thirdWebsiteParserBeautifulSoup(sport:str,sportLeague:str,linkToBettingSite:str,tableName:str,mongoDatabase:Database,allMatchups:dict):
     parsingErrorWebhook = SyncWebhook.from_url(os.getenv('PARSING_ERROR_NOTIF'))
@@ -160,27 +159,37 @@ def thirdWebsiteParserBeautifulSoup(sport:str,sportLeague:str,linkToBettingSite:
                 if currentMatchup == None: 
                     currentMatchup = Matchup(sport,sportLeague,teamOne,teamTwo,allMatchups)  
 
-                moneyLineOddOne = htmlElementsThatHaveOddsForEvents[index].text
-                moneyLineOddTwo = htmlElementsThatHaveOddsForEvents[index+1].text
+
+
+                moneyLineOddOne = htmlElementsThatHaveOddsForEvents[index].text.replace("Odds Decreased", "").replace("Odds Increased", "")
+                moneyLineOddTwo = htmlElementsThatHaveOddsForEvents[index+1].text.replace("Odds Decreased", "").replace("Odds Increased", "")
+                
+
                 currentMatchup.addMoneyLineOdds(os.getenv('THIRD_WEBSITE'),linkToBettingSite,teamOne,moneyLineOddOne,moneyLineOddTwo)
 
                 if len(htmlElementsThatHaveOddsForEvents[index+2].text.split(".5",1)) > 1:
-                    handicapOne, handicapLineOddOne = htmlElementsThatHaveOddsForEvents[index+2].text.split(".5",1)
-                    handicapTwo, handicapLineOddTwo = htmlElementsThatHaveOddsForEvents[index+3].text.split(".5",1)
+                    elementOne = htmlElementsThatHaveOddsForEvents[index+2].text.replace("Odds Decreased", "").replace("Odds Increased", "")
+                    elementTwo = htmlElementsThatHaveOddsForEvents[index+3].text.replace("Odds Decreased", "").replace("Odds Increased", "")
+
+                    handicapOne, handicapLineOddOne = elementOne.split(".5",1)
+                    handicapTwo, handicapLineOddTwo = elementTwo.split(".5",1)
                     handicapOne = teamOne + "@" + handicapOne + ".5"
                     handicapTwo = teamTwo + "@" + handicapTwo + ".5"
                     currentMatchup.addHandicapLineOdds(os.getenv('THIRD_WEBSITE'),linkToBettingSite,handicapLineOddOne,handicapLineOddTwo,handicapOne,handicapTwo)
 
                 if len(htmlElementsThatHaveOddsForEvents[index+4].text.split(".5",1)) > 1:
-                    totalBoundaryOne, totalLineOddOne = htmlElementsThatHaveOddsForEvents[index+4].text.split(".5",1)
-                    totalBoundaryTwo, totalLineOddTwo = htmlElementsThatHaveOddsForEvents[index+5].text.split(".5",1)
+                    elementOne = htmlElementsThatHaveOddsForEvents[index+4].text.replace("Odds Decreased", "").replace("Odds Increased", "")
+                    elementTwo = htmlElementsThatHaveOddsForEvents[index+5].text.replace("Odds Decreased", "").replace("Odds Increased", "")
+
+                    totalBoundaryOne, totalLineOddOne = elementOne.split(".5",1)
+                    totalBoundaryTwo, totalLineOddTwo = elementTwo.split(".5",1)
                     totalBoundaryOne = "OVER " + totalBoundaryOne + ".5"
                     totalBoundaryTwo = "UNDER " + totalBoundaryTwo + ".5"
                     currentMatchup.addTotalLineOdds(os.getenv('THIRD_WEBSITE'),linkToBettingSite,totalLineOddOne,totalLineOddTwo,totalBoundaryOne,totalBoundaryTwo)
 
     #Not entirely sure what exceptions can occur during this process, so until I know I'm going to catch every type of exception and send the message to the discord.
     except Exception as inst:
-        parsingErrorWebhook.send(content=traceback.format_exc())
+        parsingErrorWebhook.send(content = str(inst)+ " - " +str(type(inst)) + "\n\n" + traceback.format_exc()+ "\n==========================================================================")
 
 
 
@@ -207,6 +216,8 @@ def fourthWebsiteParserBeautifulSoup(sport:str,sportLeague:str,linkToBettingSite
 
             # Find all div elements with class name "participant"
             odd_columns = soup.find_all("div", class_=os.getenv('FOURTH_WEBSITE_ODD_COLUMN_ELEMENT_CLASS_NAME'))
+            
+            skipElements = len(soup.find_all("div", class_=os.getenv('FOURTH_WEBSITE_SKIP_ELEMENT_CLASS_NAME')))
 
             handicapLineOdds = []
             handicapLineBoundaries = []
@@ -214,6 +225,7 @@ def fourthWebsiteParserBeautifulSoup(sport:str,sportLeague:str,linkToBettingSite
             totalLineOdds = []
 
             for column in odd_columns:
+
                 if "Spread" in column.text or "Match Handicap" in column.text:
                     handicapLineColumn = [value for value in column.find_all("div", class_=os.getenv('FOURTH_WEBSITE_ODD_BLOCK_ELEMENT_CLASS_NAME'))]
 
@@ -248,6 +260,10 @@ def fourthWebsiteParserBeautifulSoup(sport:str,sportLeague:str,linkToBettingSite
                     moneyLineColumn = [value.text for value in column.find_all("div", class_=os.getenv('FOURTH_WEBSITE_ODD_BLOCK_ELEMENT_CLASS_NAME'))]
 
         for index in range(0,len(moneyLineColumn),2):
+            if skipElements != 0:
+                    skipElements = skipElements - 1
+                    print("SKIP ELEMENT")
+                    continue
             extractedTeamOne = team_names[index]
             extractedTeamTwo = team_names[index+1]
             teamOne,teamTwo = databaseTeamNameCheck(extractedTeamOne,extractedTeamTwo,tableName,mongoDatabase)
@@ -276,4 +292,4 @@ def fourthWebsiteParserBeautifulSoup(sport:str,sportLeague:str,linkToBettingSite
             
             
     except Exception as inst:
-        parsingErrorWebhook.send(content=traceback.format_exc() + str(len(odd_columns)))
+        parsingErrorWebhook.send(content = str(inst)+ " - " +str(type(inst)) + "\n\n" + traceback.format_exc() + "\n==========================================================================")

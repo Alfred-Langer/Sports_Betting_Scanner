@@ -97,18 +97,19 @@ class Matchup:
         for firstBettingSiteKey,teamOneOddValue in self.teamOneMoneyLineOdds.items():
             for secondBettingSiteKey,teamTwoOddValue in self.teamTwoMoneyLineOdds.items():
                 arbitragePercentage = abs((1 / float(teamOneOddValue)) + (1 / float(teamTwoOddValue)))
-                arbitrageHash = hash((teamOneOddValue,teamTwoOddValue,firstBettingSiteKey,secondBettingSiteKey,arbitragePercentage,"Moneyline"))
-                if (arbitragePercentage < 1.0 and arbitrageHash not in dataframeInformation["Hash"]):
+                dataframeInformation["Matchup Header"].append(self.teamOne + " @ " + self.teamTwo)
+                dataframeInformation["Type of bet"].append("Moneyline")
+                dataframeInformation["Team 1 Odd"].append(teamOneOddValue)
+                dataframeInformation["Team 2 Odd"].append(teamTwoOddValue)
+                dataframeInformation["Arb Percentage"].append(arbitragePercentage)
+
+
+                if (arbitragePercentage < 1.0):
                     Matchup.arbitrageWebhook.send(content="MONEY LINE Arbitrage Opportunity found:\n" + 
                     firstBettingSiteKey + " : " + self.teamOne + " @ " +  teamOneOddValue + " " + self.bettingSiteLinks[firstBettingSiteKey] + "\n" +
                     secondBettingSiteKey + " : " + self.teamTwo + " @ " + teamTwoOddValue + " " + self.bettingSiteLinks[secondBettingSiteKey] + "\n" +
                     "Arbitrage Percentage: " + str(arbitragePercentage))
-                    dataframeInformation["Matchup Header"].append(self.teamOne + " @ " + self.teamTwo)
-                    dataframeInformation["Type of bet"].append("Moneyline")
-                    dataframeInformation["Team 1 Odd"].append(teamOneOddValue)
-                    dataframeInformation["Team 2 Odd"].append(teamTwoOddValue)
-                    dataframeInformation["Arb Percentage"].append(arbitragePercentage)
-                    dataframeInformation["Hash"].append(arbitrageHash)
+                    
                     if arbitragePercentage < self.highestMoneylineArbPercentage:
                         self.highestMoneylineArbPercentage = arbitragePercentage
 
@@ -125,18 +126,20 @@ class Matchup:
                         if handicapOneValue == "" or handicapTwoValue == "" or handicapOneValue[1:] != handicapTwoValue[1:] or handicapOneValue[0] == handicapTwoValue[0] or extractedTeamOne == extractedTeamTwo:
                             continue
                         arbitragePercentage = abs((1 / float(handicapOneOdd)) + (1 / float(handicapTwoOdd)))
-                        arbitrageHash = hash((handicapOneOdd,handicapTwoOdd,firstBettingSiteKey,secondBettingSiteKey,arbitragePercentage,"Handicap"))
-                        if (arbitragePercentage < 1.0 and arbitrageHash not in dataframeInformation["Hash"]):
+                        dataframeInformation["Matchup Header"].append(self.teamOne + " @ " + self.teamTwo)
+                        dataframeInformation["Type of bet"].append("Handicap")
+                        dataframeInformation["Team 1 Odd"].append(handicapOneOdd)
+                        dataframeInformation["Team 2 Odd"].append(handicapTwoOdd)
+                        dataframeInformation["Arb Percentage"].append(arbitragePercentage)
+
+
+
+                        if (arbitragePercentage < 1.0):
                             Matchup.arbitrageWebhook.send(content="HANDICAP LINE Arbitrage Opportunity found:\n" + 
                             firstBettingSiteKey + " : " + self.teamOne + " @ " +  handicapOneOdd + " " + self.bettingSiteLinks[firstBettingSiteKey] + "\n" +
                             secondBettingSiteKey + " : " + self.teamTwo + " @ " + handicapTwoOdd + " " + self.bettingSiteLinks[secondBettingSiteKey] + "\n" +
                             "Arbitrage Percentage: " + str(arbitragePercentage))
-                            dataframeInformation["Matchup Header"].append(self.teamOne + " @ " + self.teamTwo)
-                            dataframeInformation["Type of bet"].append("Handicap")
-                            dataframeInformation["Team 1 Odd"].append(handicapOneOdd)
-                            dataframeInformation["Team 2 Odd"].append(handicapTwoOdd)
-                            dataframeInformation["Arb Percentage"].append(arbitragePercentage)
-                            dataframeInformation["Hash"].append(arbitrageHash)
+                            
                             if arbitragePercentage < self.highestHandicapLineArbPercentage:
                                 self.highestHandicapLineArbPercentage = arbitragePercentage
                         
@@ -151,18 +154,18 @@ class Matchup:
                         if totalBoundaryOne != totalBoundaryTwo or totalTitleOne == totalTitleTwo:
                             continue
                         arbitragePercentage = abs((1 / float(totalOddOne)) + (1 / float(totalOddTwo)))
-                        arbitrageHash = hash((totalOddOne,totalOddTwo,firstBettingSiteKey,secondBettingSiteKey,arbitragePercentage,"Total"))
-                        if (arbitragePercentage < 1.0 and arbitrageHash not in dataframeInformation["Hash"]):
+                        dataframeInformation["Matchup Header"].append(self.teamOne + " @ " + self.teamTwo)
+                        dataframeInformation["Type of bet"].append("Total")
+                        dataframeInformation["Team 1 Odd"].append(totalOddOne)
+                        dataframeInformation["Team 2 Odd"].append(totalOddTwo)
+                        dataframeInformation["Arb Percentage"].append(arbitragePercentage)
+                        
+                        if (arbitragePercentage < 1.0):
                             Matchup.arbitrageWebhook.send(content="TOTAL LINE Arbitrage Opportunity found:\n" + 
                             firstBettingSiteKey + " : " + self.teamOne + " @ " +  totalOddOne + " " + self.bettingSiteLinks[firstBettingSiteKey] + "\n" +
                             secondBettingSiteKey + " : " + self.teamTwo + " @ " + totalOddTwo + " " + self.bettingSiteLinks[secondBettingSiteKey] + "\n" +
                             "Arbitrage Percentage: " + str(arbitragePercentage))
-                            dataframeInformation["Matchup Header"].append(self.teamOne + " @ " + self.teamTwo)
-                            dataframeInformation["Type of bet"].append("Total")
-                            dataframeInformation["Team 1 Odd"].append(totalOddOne)
-                            dataframeInformation["Team 2 Odd"].append(totalOddTwo)
-                            dataframeInformation["Arb Percentage"].append(arbitragePercentage)
-                            dataframeInformation["Hash"].append(arbitrageHash)
+                            
                             if arbitragePercentage < self.highestTotalLineArbPercentage:
                                 self.highestTotalLineArbPercentage = arbitragePercentage            
 

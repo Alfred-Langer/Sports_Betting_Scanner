@@ -27,8 +27,8 @@ def findImageOnScreen(image:str, timeoutDuration:int, scrollFlag:bool = False, c
         elif scrollFlag:
             #Scroll Flag is specifically for locating the HTML Tags. Somtimes when you Inspect Element, the display shows the middle of the HTML content.
             #This block of code just clicks on the up arrow key of the Inspect Element scroll bar, in order to scroll up.
-            pyautogui.click(1911,202,button='left',clicks=10)
-
+            pyautogui.click(1911,202,button='left',clicks=20)
+            time.sleep(1)
     if returnNothing:
         return None
 
@@ -157,7 +157,7 @@ def firstWebsiteGetAllOddLinks(htmlFileName:str,divContainerClassName:str,aLinkC
 
     return matchUrlList
 
-def secondWebsiteGetAllOddLinks(htmlFileName:str,divContainerClassName:str,invalidInnerDivContainerClassName:str, aLinkClassName:str, retry=False):
+def secondWebsiteGetAllOddLinks(htmlFileName:str,divContainerClassName:str,invalidDivContainerClassName:str, aLinkClassName:str, retry=False):
     #This function is used when the odds for each matchup are displayed on their own individual HTML pages.
     time.sleep(1)
 
@@ -180,7 +180,8 @@ def secondWebsiteGetAllOddLinks(htmlFileName:str,divContainerClassName:str,inval
     div_containers = soup.find_all("div", class_=divContainerClassName, recursive=True)
     div_containers_with_valid_odds = []
     for event in div_containers:
-        if event.find("div", class_="odds"):
+        skipFlag = event.find("div",class_=invalidDivContainerClassName)
+        if ((event.find("div", class_="odds")) and (skipFlag is None)):
             div_containers_with_valid_odds.append(event)
 
     anchorTags = []
@@ -252,7 +253,16 @@ def firstWebsiteHTMLCollector(link:str):
 def secondWebsiteHTMLCollector(link:str):
     try:
         htmlFetchingErrorWebhook = SyncWebhook.from_url(os.getenv('HTML_FETCHING_ERROR_NOTIF'))
+        if link =="a":
+            return
         goToWebsite(link)
+        locationFlag = findImageOnScreen("websiteImages/secondWebsiteOkayButton.png",timeoutDuration = 12,grayscaleFlag=True,confidenceValue=0.95,returnNothing=True,regionBox=(745,555,505,135))
+        if locationFlag is not None:
+            pyautogui.leftClick(locationFlag)
+            locationPopup = findImageOnScreen("websiteImages/secondWebsitePopup.png",timeoutDuration = 15,grayscaleFlag=True,confidenceValue=0.95,returnNothing=True)
+            if locationPopup is not None:
+                pyautogui.leftClick(locationPopup.x+100,locationPopup.y+35)
+        
         findImageOnScreen("websiteImages/secondWebsiteLoadIcon.png",timeoutDuration = 20,grayscaleFlag=True,confidenceValue=0.95,regionBox=(1400,345,170,85))
         
         skipFlag = findImageOnScreen("websiteImages/secondWebsiteSkipElement.png",timeoutDuration = 3,grayscaleFlag=True,confidenceValue=0.95,returnNothing=True)
@@ -260,9 +270,9 @@ def secondWebsiteHTMLCollector(link:str):
             raise InvalidWebsiteLinkError(os.getenv('SECOND_WEBSITE'),link)
         copyHTML("htmlIcon.png")
 
-        matchUpLinks = secondWebsiteGetAllOddLinks(htmlFileName = os.getcwd() + "/localHTMLFiles/secondWebsiteOrigin.html",divContainerClassName=os.getenv('SECOND_WEBSITE_DIV_ELEMENT_CLASS'),invalidInnerDivContainerClassName=os.getenv("SECOND_WEBSITE_INVALID_DIV_ELEMENT_CLASS"),aLinkClassName=os.getenv('SECOND_WEBSITE_LINK_ELEMENT_CLASS'))
+        matchUpLinks = secondWebsiteGetAllOddLinks(htmlFileName = os.getcwd() + "/localHTMLFiles/secondWebsiteOrigin.html",divContainerClassName=os.getenv('SECOND_WEBSITE_DIV_ELEMENT_CLASS'),invalidDivContainerClassName=os.getenv("SECOND_WEBSITE_INVALID_DIV_ELEMENT_CLASS"),aLinkClassName=os.getenv('SECOND_WEBSITE_LINK_ELEMENT_CLASS'))
         if matchUpLinks == "Retry":
-            matchUpLinks = secondWebsiteGetAllOddLinks(htmlFileName = os.getcwd() + "/localHTMLFiles/secondWebsiteOrigin.html",divContainerClassName=os.getenv('SECOND_WEBSITE_DIV_ELEMENT_CLASS'),invalidInnerDivContainerClassName=os.getenv("SECOND_WEBSITE_INVALID_DIV_ELEMENT_CLASS"),aLinkClassName=os.getenv('SECOND_WEBSITE_LINK_ELEMENT_CLASS'),retry=True)
+            matchUpLinks = secondWebsiteGetAllOddLinks(htmlFileName = os.getcwd() + "/localHTMLFiles/secondWebsiteOrigin.html",divContainerClassName=os.getenv('SECOND_WEBSITE_DIV_ELEMENT_CLASS'),invalidDivContainerClassName=os.getenv("SECOND_WEBSITE_INVALID_DIV_ELEMENT_CLASS"),aLinkClassName=os.getenv('SECOND_WEBSITE_LINK_ELEMENT_CLASS'),retry=True)
         for index in range(len(matchUpLinks)):
             link = matchUpLinks[index]
             goToWebsite(link)
@@ -373,7 +383,7 @@ class InvalidWebsiteLinkError(Exception):
         super().__init__("\n**InvalidWebsiteLinkError:**\n\nThe current link " + self.link + " for the website: " + self.website + ", is invalid. Update the environment file.\n\n")
 
 def resetChrome():
-    chromeSettingsIcon = findImageOnScreen("chromeSettingsIcon.png",timeoutDuration = 20,grayscaleFlag=True,regionBox=(1880,55,40,66))
+    chromeSettingsIcon = findImageOnScreen("chromeSettingsIcon.png",timeoutDuration = 20,grayscaleFlag=True)
     pyautogui.leftClick(chromeSettingsIcon)
     chromeSettingsText = findImageOnScreen("chromeSettingsText.png",timeoutDuration = 20,grayscaleFlag=True)
     pyautogui.leftClick(chromeSettingsText)
@@ -406,24 +416,30 @@ def closeFirefox():
     print('complete')
     
 def removeOldHTMLFiles():
-    if os.path.exists("/localHTMLFiles/firstWebsiteOrigin.html"):
-        os.remove("/localHTMLFiles/firstWebsiteOrigin.html")
+    if os.path.exists("localHTMLFiles/firstWebsiteOrigin.html"):
+        os.remove("localHTMLFiles/firstWebsiteOrigin.html")
 
-    if os.path.exists("/localHTMLFiles/secondWebsiteOrigin.html"):
-        os.remove("/localHTMLFiles/secondWebsiteOrigin.html")
+    if os.path.exists("localHTMLFiles/secondWebsiteOrigin.html"):
+        os.remove("localHTMLFiles/secondWebsiteOrigin.html")
 
-    if os.path.exists("/localHTMLFiles/fourthWebsiteHTMLFiles/page.html"):
-        os.remove("/localHTMLFiles/fourthWebsiteHTMLFiles/page.html")
+    if os.path.exists("localHTMLFiles/fourthWebsiteHTMLFiles/page.html"):
+        os.remove("localHTMLFiles/fourthWebsiteHTMLFiles/page.html")
 
-    if os.path.exists("/localHTMLFiles/thirdWebsiteHTMLFiles/page.html"):
-        os.remove("/localHTMLFiles/thirdWebsiteHTMLFiles/page.html")
+    if os.path.exists("localHTMLFiles/thirdWebsiteHTMLFiles/page.html"):
+        os.remove("localHTMLFiles/thirdWebsiteHTMLFiles/page.html")
 
-    for x in range(1,len(os.listdir("./localHTMLFiles/firstWebsiteHTMLFiles"))):
-        if os.path.exists("./localHTMLFiles/firstWebsiteHTMLFiles/page" + str(x) + ".html"):
-            os.remove("./localHTMLFiles/firstWebsiteHTMLFiles/page" + str(x) + ".html")
+    for x in range(1,len(os.listdir("localHTMLFiles/firstWebsiteHTMLFiles"))):
+        if os.path.exists("localHTMLFiles/firstWebsiteHTMLFiles/page" + str(x) + ".html"):
+            os.remove("localHTMLFiles/firstWebsiteHTMLFiles/page" + str(x) + ".html")
 
-    for x in range(1,len(os.listdir("./localHTMLFiles/secondWebsiteHTMLFiles"))):
-        if os.path.exists("./localHTMLFiles/secondWebsiteHTMLFiles/page" + str(x) + ".html"):
-            os.remove("./localHTMLFiles/secondWebsiteHTMLFiles/page" + str(x) + ".html")
+    for x in range(1,len(os.listdir("localHTMLFiles/secondWebsiteHTMLFiles"))):
+        if os.path.exists("localHTMLFiles/secondWebsiteHTMLFiles/page" + str(x) + ".html"):
+            os.remove("localHTMLFiles/secondWebsiteHTMLFiles/page" + str(x) + ".html")
 
+
+def teamViewerClosePopup():
+    teamViewerFlag = findImageOnScreen("teamViewerPopup.png",timeoutDuration=15,grayscaleFlag=True,returnNothing=True)
+    if teamViewerFlag is not None:
+        okayButton = findImageOnScreen("teamViewerOkayButton.png",timeoutDuration=5,grayscaleFlag=True)
+        pyautogui.leftClick(okayButton)
 
