@@ -207,6 +207,7 @@ def secondWebsiteGetAllOddLinks(htmlFileName:str,divContainerClassName:str,inval
 def firstWebsiteHTMLCollector(link:str):
     try:
         htmlFetchingErrorWebhook = SyncWebhook.from_url(os.getenv('HTML_FETCHING_ERROR_NOTIF'))
+
         goToWebsite(link)
         matchUpLinks = "undefined"
         while matchUpLinks == "undefined":
@@ -307,6 +308,11 @@ def secondWebsiteHTMLCollector(link:str):
 def thirdWebsiteHTMLCollector(link:str):
     try:
         htmlFetchingErrorWebhook = SyncWebhook.from_url(os.getenv('HTML_FETCHING_ERROR_NOTIF'))
+        if link =="a":
+            file=open(os.getcwd() + "/localHTMLFiles/thirdWebsiteHTMLFiles/page.html","w")
+            file.write("")
+            file.close()
+            return
         goToWebsite(link)
         findImageOnScreen("websiteImages/thirdWebsiteLoadIcon.png",timeoutDuration = 20,grayscaleFlag=True)
         copyHTML("htmlIcon.png",scrollFlagInput=True)
@@ -326,6 +332,11 @@ def thirdWebsiteHTMLCollector(link:str):
 
 def fourthWebsiteHTMLCollector(link:str):
     htmlFetchingErrorWebhook = SyncWebhook.from_url(os.getenv('HTML_FETCHING_ERROR_NOTIF'))
+    if link =="a":
+        file=open(os.getcwd() + "/localHTMLFiles/fourthWebsiteHTMLFiles/page.html","w")
+        file.write("")
+        file.close()
+        return
     try:
         p = Thread(target=openFirefox,args=(link,))
         p.start()
@@ -351,11 +362,10 @@ def firstSimpleWebsiteHTMLCollector(link:str):
     try:
         htmlFetchingErrorWebhook = SyncWebhook.from_url(os.getenv('HTML_FETCHING_ERROR_NOTIF'))
         goToWebsite(link)
-        matchUpLinks = "undefined"
-        while matchUpLinks == "undefined":
-            findImageOnScreen("websiteImages/firstWebsiteSimpleLoadIcon.png",timeoutDuration = 20,grayscaleFlag=True,regionBox=(615,505,100,575)) #This website needs some extra time to load. This HTML icon indicates that all the HTML has been loaded and can be extracted.
-            copyHTML("htmlIcon.png")
-            createLocalHTMLFile(os.getcwd()  + "/localHTMLFiles/firstWebsiteOrigin.html") 
+
+        findImageOnScreen("websiteImages/firstWebsiteSimpleLoadIcon.png",timeoutDuration = 20,grayscaleFlag=True) #This website needs some extra time to load. This HTML icon indicates that all the HTML has been loaded and can be extracted.
+        copyHTML("htmlIcon.png")
+        createLocalHTMLFile(os.getcwd()  + "/localHTMLFiles/firstWebsiteOrigin.html") 
 
     
     #This is how I'm currently handling errors for website parsing
@@ -374,7 +384,7 @@ def firstSimpleWebsiteHTMLCollector(link:str):
     except FirstWebsiteNoOddsLoadedError as inst:
         htmlFetchingErrorWebhook.send(content=str(inst)+"==========================================================================")
 
-def secondWebsiteSimpleHTMLCollector(link:str):
+def secondSimpleWebsiteHTMLCollector(link:str):
     try:
         htmlFetchingErrorWebhook = SyncWebhook.from_url(os.getenv('HTML_FETCHING_ERROR_NOTIF'))
         if link =="a":
@@ -409,7 +419,7 @@ def secondWebsiteSimpleHTMLCollector(link:str):
         htmlFetchingErrorWebhook.send(content=str(inst)+"==========================================================================")
 
 
-def thirdWebsiteSimpleHTMLCollector(link:str):
+def thirdSimpleWebsiteHTMLCollector(link:str):
     try:
         htmlFetchingErrorWebhook = SyncWebhook.from_url(os.getenv('HTML_FETCHING_ERROR_NOTIF'))
         goToWebsite(link)
@@ -428,6 +438,30 @@ def thirdWebsiteSimpleHTMLCollector(link:str):
             htmlFetchingErrorWebhook.send("It also might be possible that the link for this website's event is invalid so double check the environment file.\n\n==========================================================================")
     except NoAnchorTagsPresentInLocalHTMLFileError as inst:
         htmlFetchingErrorWebhook.send(content=str(inst)+"==========================================================================")
+
+def fourthSimpleWebsiteHTMLCollector(link:str):
+    htmlFetchingErrorWebhook = SyncWebhook.from_url(os.getenv('HTML_FETCHING_ERROR_NOTIF'))
+    try:
+        p = Thread(target=openFirefox,args=(link,))
+        p.start()
+        findImageOnScreen("websiteImages/fourthWebsiteSimpleLoadIcon.png", timeoutDuration = 20, confidenceValue=0.90, grayscaleFlag=True)
+        copyFireFoxHTML("firefoxHtmlIcon.png",htmlFetchingErrorWebhook)
+        createLocalHTMLFile(os.getcwd() + "/localHTMLFiles/fourthWebsiteHTMLFiles/page.html",bodyFilter=False) 
+        time.sleep(1)
+        closeFirefox()
+        p.join()
+    except LocalHTMLFileNotPresent as inst: #Inst refers to the actual instance of the error/exception
+        #Here I'm sending the text of the exception to our Discord Server through our webhook
+        htmlFetchingErrorWebhook.send(content=str(inst)+"==========================================================================")
+    except ImageFileNotFoundError as inst: 
+        htmlFetchingErrorWebhook.send(content=str(inst)+"==========================================================================")
+    except ImageNotFoundOnScreenError as inst:
+        htmlFetchingErrorWebhook.send(content=str(inst)+"==========================================================================")
+        if inst.imageFile == "websiteImages/fourthWebsiteLoadIcon.png":
+            htmlFetchingErrorWebhook.send("It also might be possible that the link for this website's event is invalid so double check the environment file.\n\n==========================================================================")
+    except NoAnchorTagsPresentInLocalHTMLFileError as inst:
+        htmlFetchingErrorWebhook.send(content=str(inst)+"==========================================================================")
+
 
 #Custom Exceptions
 class ImageNotFoundOnScreenError(Exception):
