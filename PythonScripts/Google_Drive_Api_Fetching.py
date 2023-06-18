@@ -5,7 +5,7 @@ import os
 import io
 
 def getEnvFile():
-    CLIENT_SECRET_FILE = os.getcwd() + '/Google_Api_Files/Client_Secret_Arb_App.json'
+    CLIENT_SECRET_FILE = os.getcwd() + '/PythonScripts/Client_Secret_Arb_App.json'
     API_NAME = 'drive'
     API_VERSION = 'v3'
     SCOPES = ['https://www.googleapis.com/auth/drive']
@@ -39,17 +39,11 @@ def modifyEnvFile():
     secondHalf = "ESPORT_BETTING_SITE_LINK_DICTIONARY" + test.split("ESPORT_BETTING_SITE_LINK_DICTIONARY")[1]
     esportsBettingSiteLinkDictionary = secondHalf.split("ESPORTS_LEAGUES")[0].replace("\n", "")
     
-    esportsLeaguesAndBeyond = "ESPORTS_LEAGUES" + secondHalf.split("ESPORTS_LEAGUES")[1]
+    esportsLeagues = "ESPORTS_LEAGUES" + secondHalf.split("ESPORTS_LEAGUES")[1]
 
-    esportsLeagues = esportsLeaguesAndBeyond.split("SPORT_BETTING_SITE_LINK_DICTIONARY")[0].replace("\n","")
-
-    sportsBettingSiteLinkDictionaryAndBeyond = "SPORT_BETTING_SITE_LINK_DICTIONARY" + esportsLeaguesAndBeyond.split("SPORT_BETTING_SITE_LINK_DICTIONARY")[1]
-
-    sportsBettingSiteLinkDictionary = sportsBettingSiteLinkDictionaryAndBeyond.split("SPORTS_LEAGUES")[0].replace("\n","")
-
-    sportsLeagues = "SPORTS_LEAGUES" + sportsBettingSiteLinkDictionaryAndBeyond.split("SPORTS_LEAGUES")[1].replace("\n","")
+    
 
     f.close()
     f2 = open(os.getcwd()+"/PythonScripts/.env",'w')
-    f2.write(firstHalf + "\n" + esportsBettingSiteLinkDictionary + "\n" + esportsLeagues + "\n" + sportsBettingSiteLinkDictionary + "\n" + sportsLeagues)
+    f2.write(firstHalf + "\n" + esportsBettingSiteLinkDictionary + "\n" + esportsLeagues)
     f2.close()

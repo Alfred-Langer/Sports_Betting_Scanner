@@ -96,6 +96,8 @@ class Matchup:
     def arbitrageCheck(self,dataframeInformation:dict) -> None:
         for firstBettingSiteKey,teamOneOddValue in self.teamOneMoneyLineOdds.items():
             for secondBettingSiteKey,teamTwoOddValue in self.teamTwoMoneyLineOdds.items():
+                if teamOneOddValue == "Market Offline" or teamTwoOddValue == "Market Offline":
+                    continue
                 arbitragePercentage = abs((1 / float(teamOneOddValue)) + (1 / float(teamTwoOddValue)))
                 dataframeInformation["Matchup Header"].append(self.teamOne + " @ " + self.teamTwo)
                 dataframeInformation["Type of bet"].append("Moneyline")
@@ -123,6 +125,8 @@ class Matchup:
 
                         extractedTeamOne, handicapOneValue= handicapOne.split("@")
                         extractedTeamTwo, handicapTwoValue= handicapTwo.split("@")
+                        signOne = handicapOneValue[0]
+                        signTwo = handicapTwoValue[0]
                         if handicapOneValue == "" or handicapTwoValue == "" or handicapOneValue[1:] != handicapTwoValue[1:] or handicapOneValue[0] == handicapTwoValue[0] or extractedTeamOne == extractedTeamTwo:
                             continue
                         arbitragePercentage = abs((1 / float(handicapOneOdd)) + (1 / float(handicapTwoOdd)))

@@ -49,7 +49,7 @@ def inspectElement():
 
 def goToWebsite(url:str):
     #Click on the Address bar
-    x,y = findImageOnScreen("bookMarkIcons.png",timeoutDuration = 5, regionBox=(960,0,960,540),grayscaleFlag=True)
+    x,y = findImageOnScreen("bookMarkIcons.png",timeoutDuration = 5, regionBox=(1732,85,187,71),grayscaleFlag=True)
     pyautogui.click(x - 450,y)
 
     #Delete all the content currently in the Address bar
@@ -221,9 +221,10 @@ def firstWebsiteHTMLCollector(link:str):
             time.sleep(1)
             counter = 0
             noOddsLoadedFlag = None
-            while counter < 30 and noOddsLoadedFlag is None:
+            while counter < 40 and noOddsLoadedFlag is None:
                 allOddsOptionIconLocation=findImageOnScreen("websiteImages/allOddsOption.png",timeoutDuration=1,grayscaleFlag=True, confidenceValue=0.90, returnNothing=True)
                 if allOddsOptionIconLocation is None:
+                    counter += 1
                     continue
                 pyautogui.leftClick(allOddsOptionIconLocation)
                 pyautogui.moveTo(allOddsOptionIconLocation.x + 70,allOddsOptionIconLocation.y)
@@ -257,12 +258,17 @@ def secondWebsiteHTMLCollector(link:str):
         if link =="a":
             return
         goToWebsite(link)
-        locationFlag = findImageOnScreen("websiteImages/secondWebsiteOkayButton.png",timeoutDuration = 12,grayscaleFlag=True,confidenceValue=0.95,returnNothing=True,regionBox=(745,555,505,135))
+        locationFlag = findImageOnScreen("websiteImages/secondWebsiteOkayButton.png",timeoutDuration = 20,grayscaleFlag=True,confidenceValue=0.95,returnNothing=True,regionBox=(745,555,505,135))
         if locationFlag is not None:
             pyautogui.leftClick(locationFlag)
             locationPopup = findImageOnScreen("websiteImages/secondWebsitePopup.png",timeoutDuration = 15,grayscaleFlag=True,confidenceValue=0.95,returnNothing=True)
             if locationPopup is not None:
                 pyautogui.leftClick(locationPopup.x+100,locationPopup.y+35)
+
+        supportButtonLocation = findImageOnScreen("supportButton.png",timeoutDuration=5,grayscaleFlag=True,confidenceValue=0.95)
+        pyautogui.leftClick(supportButtonLocation.x-120,supportButtonLocation.y)
+        decimalOption = findImageOnScreen("decimalOption.png",timeoutDuration=5,grayscaleFlag=True,confidenceValue=0.95)
+        pyautogui.leftClick(decimalOption)
         
         findImageOnScreen("websiteImages/secondWebsiteLoadIcon.png",timeoutDuration = 20,grayscaleFlag=True,confidenceValue=0.95,regionBox=(1400,345,170,85))
         
@@ -278,7 +284,7 @@ def secondWebsiteHTMLCollector(link:str):
             link = matchUpLinks[index]
             goToWebsite(link)
             try: #I have an inner try and catch loop here because if we can't find the oddsLoadedIcon on just one of the pages, I don't want the program to skip all the other pages because the icon might be there. If I just had one try and catch in the collector function, then I would skip all the odds pages as soon as I can't find the icon.
-                matchWinnerIconLocation=findImageOnScreen("websiteImages/secondWebsiteOddsLoadedIcon.png",timeoutDuration = 20,grayscaleFlag=True,confidenceValue=0.99)
+                matchWinnerIconLocation=findImageOnScreen("websiteImages/secondWebsiteOddsLoadedIcon.png",timeoutDuration = 25,grayscaleFlag=True,confidenceValue=0.99)
             except ImageNotFoundOnScreenError as inst:
                 htmlFetchingErrorWebhook.send(content=str(inst)+"==========================================================================")
                 continue
@@ -340,7 +346,7 @@ def fourthWebsiteHTMLCollector(link:str):
     try:
         p = Thread(target=openFirefox,args=(link,))
         p.start()
-        findImageOnScreen("websiteImages/fourthWebsiteLoadIcon.png", timeoutDuration = 20, confidenceValue=0.90, grayscaleFlag=True)
+        findImageOnScreen("websiteImages/fourthWebsiteLoadIcon.png", timeoutDuration = 20, confidenceValue=0.90, grayscaleFlag=True,regionBox=(445,345,400,165))
         copyFireFoxHTML("firefoxHtmlIcon.png",htmlFetchingErrorWebhook)
         createLocalHTMLFile(os.getcwd() + "/localHTMLFiles/fourthWebsiteHTMLFiles/page.html",bodyFilter=False) 
         time.sleep(1)
@@ -353,11 +359,12 @@ def fourthWebsiteHTMLCollector(link:str):
         htmlFetchingErrorWebhook.send(content=str(inst)+"==========================================================================")
     except ImageNotFoundOnScreenError as inst:
         htmlFetchingErrorWebhook.send(content=str(inst)+"==========================================================================")
+        closeFirefox()
         if inst.imageFile == "websiteImages/fourthWebsiteLoadIcon.png":
             htmlFetchingErrorWebhook.send("It also might be possible that the link for this website's event is invalid so double check the environment file.\n\n==========================================================================")
     except NoAnchorTagsPresentInLocalHTMLFileError as inst:
         htmlFetchingErrorWebhook.send(content=str(inst)+"==========================================================================")
-
+    
 def firstSimpleWebsiteHTMLCollector(link:str):
     try:
         htmlFetchingErrorWebhook = SyncWebhook.from_url(os.getenv('HTML_FETCHING_ERROR_NOTIF'))
@@ -499,15 +506,15 @@ class InvalidWebsiteLinkError(Exception):
         super().__init__("\n**InvalidWebsiteLinkError:**\n\nThe current link " + self.link + " for the website: " + self.website + ", is invalid. Update the environment file.\n\n")
 
 def resetChrome():
-    chromeSettingsIcon = findImageOnScreen("chromeSettingsIcon.png",timeoutDuration = 20,grayscaleFlag=True)
+    chromeSettingsIcon = findImageOnScreen("chromeSettingsIcon.png", regionBox = (1872,91,47,44), timeoutDuration = 20,grayscaleFlag=True)
     pyautogui.leftClick(chromeSettingsIcon)
-    chromeSettingsText = findImageOnScreen("chromeSettingsText.png",timeoutDuration = 20,grayscaleFlag=True)
+    chromeSettingsText = findImageOnScreen("chromeSettingsText.png", regionBox = (1545,133,371,495), timeoutDuration = 20,grayscaleFlag=True)
     pyautogui.leftClick(chromeSettingsText)
-    resetAndCleanUpText = findImageOnScreen("resetAndCleanUpText.png",timeoutDuration = 20,grayscaleFlag=True)
+    resetAndCleanUpText = findImageOnScreen("resetAndCleanUpText.png", regionBox = (69, 728, 216, 50),timeoutDuration = 20,grayscaleFlag=True)
     pyautogui.leftClick(resetAndCleanUpText)
-    resetSettingsToDefault = findImageOnScreen("restoreSettingsToDefaultButton.png",timeoutDuration = 20,grayscaleFlag=True)
+    resetSettingsToDefault = findImageOnScreen("restoreSettingsToDefaultButton.png", regionBox = (622,269,750,91),timeoutDuration = 20,grayscaleFlag=True)
     pyautogui.leftClick(resetSettingsToDefault)
-    resetButton = findImageOnScreen("resetSettingsButton.png",timeoutDuration = 20,grayscaleFlag=True)
+    resetButton = findImageOnScreen("resetSettingsButton.png",regionBox=(1084,609,172,87), timeoutDuration = 20,grayscaleFlag=True)
     pyautogui.leftClick(resetButton)
 
     time.sleep(2)
